@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="th">
+<!DOCTYPE html>
+<html lang="th">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -14,15 +15,16 @@
     }
     .hidden { display: none !important; }
     .homeScreen {
-      width: 100%; height: 100%; display: grid; place-items: center; padding: 18px;
+      width: 100%; height: 100%; overflow-y: auto; display: grid; place-items: center; padding: 18px;
       background: radial-gradient(circle at top, #26304d, #0c0d12 60%);
     }
     .homeCard {
-      width: min(440px, 100%); background: #15171d; border: 1px solid #2a2d36;
+      width: min(460px, 100%); background: #15171d; border: 1px solid #2a2d36;
       border-radius: 24px; padding: 18px; box-shadow: 0 20px 70px rgba(0,0,0,.45);
       animation: fadeIn .22s ease both;
     }
     .homeCard h1 { margin: 0 0 6px; font-size: 24px; }
+    .homeCard h2 { font-size:16px;margin:0 0 8px; }
     .homeCard p { margin: 0 0 14px; color: #aeb3c2; font-size: 13px; }
     .homeLine { height: 1px; background: #2a2d36; margin: 14px 0; }
     button, input, select {
@@ -34,8 +36,9 @@
       padding: 10px;
       transition: transform .15s ease, background .15s ease, opacity .15s ease;
     }
+    button:disabled { opacity:.45; cursor:not-allowed; }
     button:active { transform: scale(.96); }
-    button { cursor: pointer; font-weight: 700; background: #2d64ff; border-color: #2d64ff; }
+    button { cursor: pointer; font-weight: 700; background: #2d64ff; border-color: #2d64ff; width: 100%; margin-top: 8px; }
     button.secondary { background: #252936; border-color: #343846; }
     button.danger { background: #d13b3b; border-color: #d13b3b; }
     button.good { background: #239b58; border-color: #239b58; }
@@ -43,414 +46,420 @@
     input, select { width: 100%; }
     input[type="color"] { height: 42px; padding: 4px; }
     input[type="file"] { font-size: 12px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.app {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-rows: 54px 1fr 72px;
-  background: radial-gradient(circle at top, #20263a, #0c0d12 55%);
-}
-
-.topbar {
-  height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(17,19,27,.92);
-  border-bottom: 1px solid #272b38;
-  z-index: 5;
-}
-.topbar b { font-size: 15px; }
-.topbar span { display:block; font-size: 11px; color:#aeb3c2; }
-.topbar button { width: auto; padding: 8px 12px; border-radius: 999px; }
-
-.workspace {
-  position: relative;
-  overflow: hidden;
-  padding: 14px;
-  touch-action: none;
-}
-.canvasStage {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-.canvasWrap {
-  display: inline-block;
-  background: #fff;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 18px 60px rgba(0,0,0,.45);
-  transform-origin: 0 0;
-  transition: none;
-  touch-action: none;
-  will-change: transform;
-  user-select: none;
-}
-.canvasWrap.smooth {
-  transition: transform .18s ease-out;
-}
-canvas { display:block; background:#fff; }
-
-.floatTools {
-  position: fixed;
-  right: 12px;
-  top: 68px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 10;
-}
-.floatTools button {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  padding: 0;
-  box-shadow: 0 10px 24px rgba(0,0,0,.35);
-}
-
-.bottomBar {
-  height: 72px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 8px 10px 10px;
-  background: rgba(17,19,27,.95);
-  border-top: 1px solid #272b38;
-  z-index: 30;
-}
-.bottomBar button {
-  min-width: 0;
-  padding: 8px 4px;
-  border-radius: 16px;
-  font-size: 11px;
-  background: #252936;
-  border-color: #343846;
-}
-.bottomBar button.active { background:#2d64ff; border-color:#2d64ff; }
-
-.sheetBackdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.35);
-  z-index: 35;
-}
-.sheetBackdrop.show { display:block; }
-
-.sheet {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 72vh;
-  z-index: 40;
-  background: #15171d;
-  border-radius: 24px 24px 0 0;
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: 0 -20px 70px rgba(0,0,0,.55);
-  transform: translateY(105%);
-  transition: transform .25s cubic-bezier(.2,.8,.2,1);
-  overflow: hidden;
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-}
-.sheet.open { transform: translateY(0); }
-.sheetHead {
-  padding: 10px 12px 4px;
-  text-align: center;
-  color: #aeb3c2;
-  font-size: 12px;
-}
-.handle {
-  width: 58px;
-  height: 5px;
-  background: #747d92;
-  border-radius: 999px;
-  margin: 0 auto 8px;
-}
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 7px;
-  padding: 8px 12px 10px;
-  border-bottom: 1px solid #272b38;
-}
-.tabs button {
-  background: #252936;
-  border-color: #343846;
-  border-radius: 999px;
-  padding: 9px 4px;
-  font-size: 12px;
-}
-.tabs button.active { background:#2d64ff; border-color:#2d64ff; }
-.sheetBody { overflow-y: auto; padding: 12px; }
-.page { display:none; animation: fadeIn .18s ease both; }
-.page.active { display:block; }
-@keyframes fadeIn { from { opacity:.4; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
-.card {
-  background:#1b1e26;
-  border:1px solid #2a2d36;
-  border-radius:18px;
-  padding:12px;
-  margin-bottom:12px;
-}
-.card h2 { margin:0 0 10px; font-size:15px; }
-.status {
-  color:#b9bfce;
-  font-size:12px;
-  line-height:1.5;
-  background:#111319;
-  border:1px solid #2a2d36;
-  border-radius:12px;
-  padding:10px;
-  margin-top:10px;
-}
-.hint { color:#9ca3b8; font-size:12px; line-height:1.45; }
-
-.shortcutTools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.shortcutList { margin-top: 12px; display: grid; gap: 8px; }
-.shortcutItem {
-  display: grid;
-  grid-template-columns: 12px 1fr auto;
-  gap: 8px;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid #2a2d36;
-  border-radius: 14px;
-  background: #111319;
-}
-.dot { width: 10px; height: 10px; border-radius: 50%; background: #777; box-shadow: 0 0 10px rgba(255,255,255,.15); }
-.dot.online { background: #27d36b; box-shadow: 0 0 12px rgba(39,211,107,.75); }
-.dot.offline { background: #e44343; box-shadow: 0 0 12px rgba(228,67,67,.55); }
-.shortcutTitle { font-size: 13px; color: #fff; font-weight: 700; }
-.shortcutCode { font-size: 11px; color: #9ca3b8; margin-top: 2px; }
-.shortcutActions { display: flex; gap: 6px; }
-.shortcutActions button { padding: 7px 9px; font-size: 11px; border-radius: 10px; }
-
-@media (min-width: 901px) {
-  .app { grid-template-rows: 58px 1fr; grid-template-columns: 330px 1fr; }
-  .topbar { grid-column: 1 / 3; }
-  .workspace { grid-column: 2; grid-row: 2; }
-  .sheetBackdrop, .bottomBar, .floatTools { display:none !important; }
-  .sheet {
-    position: static;
-    grid-column: 1;
-    grid-row: 2;
-    height: auto;
-    transform: none;
-    border-radius: 0;
-    border-top: 0;
-    display: grid;
-  }
-  .sheetHead { display:none; }
-}
-
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .app {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-rows: 54px 1fr 72px;
+      background: radial-gradient(circle at top, #20263a, #0c0d12 55%);
+    }
+    .topbar {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(17,19,27,.92);
+      border-bottom: 1px solid #272b38;
+      z-index: 5;
+    }
+    .topbar b { font-size: 15px; }
+    .topbar span { display:block; font-size: 11px; color:#aeb3c2; }
+    .topbar button { width: auto; padding: 8px 12px; border-radius: 999px; margin-top: 0; }
+    .workspace { position: relative; overflow: hidden; padding: 14px; touch-action: none; }
+    .canvasStage { width: 100%; height: 100%; position: relative; overflow: hidden; }
+    .canvasWrap {
+      display: inline-block;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      transform-origin: 0 0;
+      transition: none;
+      touch-action: none;
+      will-change: transform;
+      user-select: none;
+    }
+    .canvasWrap.smooth { transition: transform .18s ease-out; }
+    canvas { display:block; background:#fff; }
+    .floatTools {
+      position: fixed;
+      right: 12px;
+      top: 68px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+    .floatTools button {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      padding: 0;
+      margin-top: 0;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+    }
+    .bottomBar {
+      height: 72px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 8px 10px 10px;
+      background: rgba(17,19,27,.95);
+      border-top: 1px solid #272b38;
+      z-index: 30;
+    }
+    .bottomBar button {
+      min-width: 0;
+      padding: 8px 4px;
+      border-radius: 16px;
+      font-size: 11px;
+      background: #252936;
+      border-color: #343846;
+      margin-top: 0;
+    }
+    .bottomBar button.active { background:#2d64ff; border-color:#2d64ff; }
+    .sheetBackdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 35;
+    }
+    .sheetBackdrop.show { display:block; }
+    .sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72vh;
+      z-index: 40;
+      background: #15171d;
+      border-radius: 24px 24px 0 0;
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 -20px 70px rgba(0,0,0,.55);
+      transform: translateY(105%);
+      transition: transform .25s cubic-bezier(.2,.8,.2,1);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheetHead { padding: 10px 12px 4px; text-align: center; color: #aeb3c2; font-size: 12px; }
+    .handle { width: 58px; height: 5px; background: #747d92; border-radius: 999px; margin: 0 auto 8px; }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      padding: 8px 12px 10px;
+      border-bottom: 1px solid #272b38;
+    }
+    .tabs button {
+      background: #252936;
+      border-color: #343846;
+      border-radius: 999px;
+      padding: 9px 4px;
+      font-size: 12px;
+      margin-top: 0;
+    }
+    .tabs button.active { background:#2d64ff; border-color:#2d64ff; }
+    .sheetBody { overflow-y: auto; padding: 12px; }
+    .page { display:none; animation: fadeIn .18s ease both; }
+    .page.active { display:block; }
+    @keyframes fadeIn { from { opacity:.4; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+    .card {
+      background:#1b1e26;
+      border:1px solid #2a2d36;
+      border-radius:18px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .card h2 { margin:0 0 10px; font-size:15px; }
+    .status {
+      color:#b9bfce;
+      font-size:12px;
+      line-height:1.5;
+      background:#111319;
+      border:1px solid #2a2d36;
+      border-radius:12px;
+      padding:10px;
+      margin-top:10px;
+      word-break: break-word;
+    }
+    .hint { color:#9ca3b8; font-size:12px; line-height:1.45; }
+    .shortcutTools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .shortcutList { margin-top: 12px; display: grid; gap: 8px; }
+    .shortcutItem {
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #2a2d36;
+      border-radius: 14px;
+      background: #111319;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #777; box-shadow: 0 0 10px rgba(255,255,255,.15); }
+    .dot.online { background: #27d36b; box-shadow: 0 0 12px rgba(39,211,107,.75); }
+    .dot.offline { background: #e44343; box-shadow: 0 0 12px rgba(228,67,67,.55); }
+    .shortcutTitle { font-size: 13px; color: #fff; font-weight: 700; }
+    .shortcutCode { font-size: 11px; color: #9ca3b8; margin-top: 2px; }
+    .shortcutActions { display: flex; gap: 6px; }
+    .shortcutActions button { padding: 7px 9px; font-size: 11px; border-radius: 10px; width: auto; margin-top: 0; }
+    @media (min-width: 901px) {
+      .app { grid-template-rows: 58px 1fr; grid-template-columns: 330px 1fr; }
+      .topbar { grid-column: 1 / 3; }
+      .workspace { grid-column: 2; grid-row: 2; }
+      .sheetBackdrop, .bottomBar, .floatTools { display:none !important; }
+      .sheet {
+        position: static;
+        grid-column: 1;
+        grid-row: 2;
+        height: auto;
+        transform: none;
+        border-radius: 0;
+        border-top: 0;
+        display: grid;
+      }
+      .sheetHead { display:none; }
+    }
   </style>
 </head>
 <body>
   <section id="homeScreen" class="homeScreen">
     <div class="homeCard">
       <h1>Image Grid Builder</h1>
-      <p>สร้างโปรเจกต์ / เข้าร่วมห้อง / โหลดงานเดิม</p><label>ชื่อโปรเจกต์</label>
-  <input id="projectNameInput" type="text" value="My Grid Project" />
-  <button id="createProjectBtn">สร้างโปรเจกต์ใหม่</button>
+      <p>ล็อกอินก่อนใช้งาน โปรเจกต์จะเซฟบน Firebase ตามบัญชีผู้ใช้ ไม่ใช้ localStorage</p>
 
-  <div class="homeLine"></div>
+      <div id="authBox">
+        <h2>Sign in / Register</h2>
+        <label>Email</label>
+        <input id="authEmail" type="email" placeholder="you@example.com">
+        <label>Password</label>
+        <input id="authPassword" type="password" placeholder="อย่างน้อย 6 ตัว">
+        <div class="row">
+          <button id="signInBtn">Sign in</button>
+          <button id="registerBtn" class="secondary">Register</button>
+        </div>
+        <button id="googleSignInBtn" class="good">Sign in with Google</button>
+        <div id="authStatus" class="status">ยังไม่ได้ล็อกอิน</div>
+      </div>
 
-  <label>Join Code</label>
-  <input id="joinCodeInput" type="text" placeholder="ใส่โค้ดห้อง เช่น ABCD-1234" />
-  <button id="joinProjectBtn" class="secondary">เข้าร่วมโปรเจกต์ด้วยโค้ด</button>
+      <div id="projectHomeBox" class="hidden">
+        <div class="homeLine"></div>
+        <div id="userStatus" class="status"></div>
+        <button id="signOutBtn" class="danger">ออกจากระบบ</button>
 
-  <div class="homeLine"></div>
-  <button id="loadLocalProjectBtn" class="secondary">โหลดโปรเจกต์ที่เซฟในเครื่อง</button>
+        <div class="homeLine"></div>
+        <label>ชื่อโปรเจกต์</label>
+        <input id="projectNameInput" type="text" value="My Grid Project" />
+        <button id="createProjectBtn">สร้างโปรเจกต์ใหม่</button>
 
-  <div class="homeLine"></div>
-  <h2 style="font-size:16px;margin:0 0 8px;">ทางลัดเซิร์ฟเวอร์</h2>
-  <label>ชื่อทางลัด</label>
-  <input id="shortcutNameInput" type="text" placeholder="เช่น เซิร์ฟเพื่อน / โปรเจกต์แมพ" />
-  <label>Server Code</label>
-  <input id="shortcutCodeInput" type="text" placeholder="ใส่โค้ด เช่น ABCD-1234" />
-  <div class="shortcutTools">
-    <button id="addShortcutBtn" class="secondary">เพิ่มทางลัด</button>
-    <button id="refreshShortcutBtn" class="secondary">รีเฟรชสถานะ</button>
-  </div>
-  <div id="roomShortcutList" class="shortcutList"></div>
+        <div class="homeLine"></div>
+        <label>Join Code</label>
+        <input id="joinCodeInput" type="text" placeholder="ใส่โค้ดห้อง เช่น ABCD-1234" />
+        <button id="joinProjectBtn" class="secondary">เข้าร่วมโปรเจกต์ด้วยโค้ด</button>
 
-  <p class="hint">Real-time พร้อมใช้ผ่าน Firebase แล้ว ถ้า Join ไม่ได้ให้เช็ก Rules ของ Realtime Database</p>
-</div>
+        <div class="homeLine"></div>
+        <button id="loadCloudProjectBtn" class="secondary">โหลดโปรเจกต์ล่าสุดบนบัญชีนี้</button>
+        <button id="exportProjectFileBtn" class="secondary">ส่งออกไฟล์สำรอง .json</button>
+        <label>นำเข้าไฟล์สำรอง</label>
+        <input id="importProjectFileInput" type="file" accept="application/json,.json">
 
-  </section>  <main id="appMain" class="app hidden">
+        <div class="homeLine"></div>
+        <h2>ทางลัดเซิร์ฟเวอร์</h2>
+        <label>ชื่อทางลัด</label>
+        <input id="shortcutNameInput" type="text" placeholder="เช่น เซิร์ฟเพื่อน / โปรเจกต์แมพ" />
+        <label>Server Code</label>
+        <input id="shortcutCodeInput" type="text" placeholder="ใส่โค้ด เช่น ABCD-1234" />
+        <div class="shortcutTools">
+          <button id="addShortcutBtn" class="secondary">เพิ่มทางลัด</button>
+          <button id="refreshShortcutBtn" class="secondary">รีเฟรชสถานะ</button>
+        </div>
+        <div id="roomShortcutList" class="shortcutList"></div>
+      </div>
+
+      <p class="hint">ต้องเปิด Firebase Authentication: Email/Password และ Google provider ใน Firebase Console ก่อนใช้งานครับ</p>
+    </div>
+  </section>
+
+  <main id="appMain" class="app hidden">
     <header class="topbar">
       <div><b>Image Grid Builder</b><span id="statusText">พร้อมใช้งาน</span></div>
       <button id="openMenuBtn">เมนู</button>
-    </header><section class="workspace" id="workspace">
-  <div class="canvasStage">
-    <div id="canvasWrap" class="canvasWrap"><canvas id="canvas"></canvas></div>
-  </div>
-</section>
+    </header>
 
-<div class="floatTools">
-  <button id="selectToggleBtn">☝</button>
-  <button id="zoomInBtn">＋</button>
-  <button id="zoomOutBtn">－</button>
-</div>
-
-<nav class="bottomBar">
-  <button data-open-tab="setup" class="active">ตั้งค่า</button>
-  <button data-open-tab="layer">เลเยอร์</button>
-  <button data-open-tab="grid">Grid</button>
-  <button data-open-tab="export">Export</button>
-  <button id="closeSheetBtn">ปิด</button>
-</nav>
-
-<div id="sheetBackdrop" class="sheetBackdrop"></div>
-
-<aside id="sheet" class="sheet open">
-  <div class="sheetHead" id="sheetHead"><div class="handle"></div>แตะนอกเมนูหรือกดปิดเพื่อปิด</div>
-  <div class="tabs">
-    <button data-tab="setup" class="active">ตั้งค่า</button>
-    <button data-tab="layer">เลเยอร์</button>
-    <button data-tab="grid">Grid</button>
-    <button data-tab="export">Export</button>
-    <button data-tab="share">แชร์</button>
-  </div>
-
-  <div class="sheetBody">
-    <section class="page active" data-page="setup">
-      <div class="card">
-        <h2>ตารางหลัก</h2>
-        <div class="row">
-          <div><label>คอลัมน์</label><input id="cols" type="number" min="1" max="100" value="4"></div>
-          <div><label>แถว</label><input id="rows" type="number" min="1" max="100" value="4"></div>
-        </div>
-        <div class="row">
-          <div><label>กว้างต่อช่อง px</label><input id="cellW" type="number" min="10" value="160"></div>
-          <div><label>สูงต่อช่อง px</label><input id="cellH" type="number" min="10" value="160"></div>
-        </div>
-        <button id="buildBtn">สร้าง / รีเซ็ตตาราง</button>
-        <div id="gridInfo" class="status"></div>
-      </div>
-
-      <div class="card">
-        <h2>โหมดภาพ</h2>
-        <label>โหมด</label>
-        <select id="mode">
-          <option value="combine">Combine Mode - รวมภาพหลายช่อง</option>
-          <option value="split">Split Mode - แยกภาพเดียว</option>
-        </select>
-        <div id="combineBox">
-          <label>รูปสำหรับช่องที่เลือก</label>
-          <input id="cellUpload" type="file" accept="image/*">
-          <button id="fillSelectedBtn" class="secondary">ใส่รูปลงพื้นที่ที่เลือก</button>
-        </div>
-        <div id="splitBox" style="display:none;">
-          <label>รูปเดียวสำหรับแยกตามตาราง</label>
-          <input id="splitUpload" type="file" accept="image/*">
-          <button id="splitBtn" class="secondary">แยกภาพเข้าช่องทั้งหมด</button>
-        </div>
+    <section class="workspace" id="workspace">
+      <div class="canvasStage">
+        <div id="canvasWrap" class="canvasWrap"><canvas id="canvas"></canvas></div>
       </div>
     </section>
 
-    <section class="page" data-page="layer">
-      <div class="card">
-        <h2>การเลือกพื้นที่</h2>
-        <label>ระบบเลือกพื้นที่</label>
-        <select id="selectionEnabled">
-          <option value="on">เปิดการเลือก</option>
-          <option value="off">ปิดการเลือก / View Mode</option>
-        </select>
-        <label>วิธีเลือก</label>
-        <select id="selectMode">
-          <option value="click">แตะ / คลิก</option>
-          <option value="drag">ลากครอบ</option>
-        </select>
-        <label>ระดับการเลือก</label>
-        <select id="selectLevel">
-          <option value="major">ช่องใหญ่</option>
-          <option value="minor">ช่องย่อย</option>
-        </select>
-        <button id="clearSelectionBtn" class="secondary">ล้างการเลือก</button>
-        <button id="deleteSelectedBtn" class="danger">ลบเฉพาะส่วนที่เลือก</button>
-        <p class="hint">ปุ่มลอยใช้สลับ ☝ เลือกช่อง / ✋ View Mode: ใช้สองนิ้วซูมแบบไม่หน่วง โดยยึดจุดกึ่งกลางนิ้วเป็นจุดซูม</p>
-      </div>
-    </section>
+    <div class="floatTools">
+      <button id="selectToggleBtn">☝</button>
+      <button id="zoomInBtn">＋</button>
+      <button id="zoomOutBtn">－</button>
+    </div>
 
-    <section class="page" data-page="grid">
-      <div class="card">
-        <h2>ตารางซ้อน</h2>
-        <label>โหมดตาราง</label>
-        <select id="gridGlobalMode">
-          <option value="custom">เลือกเปิด/ปิดเอง</option>
-          <option value="all">เปิดทั้งหมด</option>
-          <option value="none">ปิดทั้งหมด</option>
-        </select>
-        <label>ตารางหลัก</label>
-        <select id="showMajorGrid">
-          <option value="yes">เปิด</option>
-          <option value="no">ปิด</option>
-        </select>
-        <div class="row">
-          <div><label>ชื่อตารางหลัก</label><input id="majorGridName" type="text" value="ตารางหลัก"></div>
-          <div><label>สีตารางหลัก</label><input id="majorColor" type="color" value="#111111"></div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>ตารางย่อย</h2>
-        <div id="minorGridList"></div>
-        <button id="addMinorGridBtn" class="secondary">+ เพิ่มตารางย่อย</button>
-      </div>
-    </section>
+    <nav class="bottomBar">
+      <button data-open-tab="setup" class="active">ตั้งค่า</button>
+      <button data-open-tab="layer">เลเยอร์</button>
+      <button data-open-tab="grid">Grid</button>
+      <button data-open-tab="export">Export</button>
+      <button id="closeSheetBtn">ปิด</button>
+    </nav>
 
-    <section class="page" data-page="export">
-      <div class="card">
-        <h2>ส่งออก</h2>
-        <label>Zoom</label>
-        <input id="zoom" type="range" min="10" max="250" value="80">
-        <div id="zoomText" class="status">80%</div>
-        <label>ตอนดาวน์โหลดให้ติดตารางไหม</label>
-        <select id="exportGridMode">
-          <option value="with">ติดตาราง</option>
-          <option value="without">ไม่ติดตาราง</option>
-        </select>
-        <button id="downloadAllBtn" class="good">ดาวน์โหลดภาพรวม PNG</button>
-        <button id="downloadSelectedBtn" class="secondary">ดาวน์โหลดเฉพาะส่วนที่เลือก</button>
-      </div>
-    </section>
+    <div id="sheetBackdrop" class="sheetBackdrop"></div>
 
-    <section class="page" data-page="share">
-      <div class="card">
-        <h2>โปรเจกต์ / ห้อง</h2>
-        <div id="projectStatus" class="status">ยังไม่ได้เชื่อมห้อง</div>
-        <button id="saveProjectBtn" class="good">เซฟโปรเจกต์ในเครื่อง</button>
-        <button id="copyProjectBtn" class="secondary">คัดลอกโปรเจกต์เป็นข้อความ</button>
-        <button id="backHomeBtn" class="secondary">กลับหน้าแรก</button>
+    <aside id="sheet" class="sheet open">
+      <div class="sheetHead" id="sheetHead"><div class="handle"></div>แตะนอกเมนูหรือกดปิดเพื่อปิด</div>
+      <div class="tabs">
+        <button data-tab="setup" class="active">ตั้งค่า</button>
+        <button data-tab="layer">เลเยอร์</button>
+        <button data-tab="grid">Grid</button>
+        <button data-tab="export">Export</button>
+        <button data-tab="share">แชร์</button>
       </div>
-      <div class="card">
-        <h2>แชร์ด้วยลิงก์</h2>
-        <button id="copyShareLinkBtn" class="secondary">คัดลอกลิงก์โปรเจกต์</button>
-        <p class="hint">ลิงก์ใช้จริงเมื่อเว็บถูกโฮสต์ออนไลน์และต่อฐานข้อมูลกลาง</p>
-      </div>
-      <div class="card">
-        <h2>แชร์ด้วย Code</h2>
-        <label>อายุ Code</label>
-        <select id="codeExpireMode">
-          <option value="forever">ถาวร</option>
-          <option value="10m">10 นาที</option>
-          <option value="1h">1 ชั่วโมง</option>
-          <option value="24h">24 ชั่วโมง</option>
-        </select>
-        <button id="generateCodeBtn">สร้าง / รีโค้ดใหม่</button>
-        <button id="toggleCodeBtn" class="secondary">เปิด / ปิด Code</button>
-        <div id="shareCodeBox" class="status">ยังไม่มี Code</div>
-      </div>
-    </section>
-  </div>
-</aside>
 
-  </main>  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>  <script>
+      <div class="sheetBody">
+        <section class="page active" data-page="setup">
+          <div class="card">
+            <h2>ตารางหลัก</h2>
+            <div class="row">
+              <div><label>คอลัมน์</label><input id="cols" type="number" min="1" max="100" value="4"></div>
+              <div><label>แถว</label><input id="rows" type="number" min="1" max="100" value="4"></div>
+            </div>
+            <div class="row">
+              <div><label>กว้างต่อช่อง px</label><input id="cellW" type="number" min="10" value="160"></div>
+              <div><label>สูงต่อช่อง px</label><input id="cellH" type="number" min="10" value="160"></div>
+            </div>
+            <button id="buildBtn">สร้าง / รีเซ็ตตาราง</button>
+            <div id="gridInfo" class="status"></div>
+          </div>
+
+          <div class="card">
+            <h2>โหมดภาพ</h2>
+            <label>โหมด</label>
+            <select id="mode">
+              <option value="combine">Combine Mode - รวมภาพหลายช่อง</option>
+              <option value="split">Split Mode - แยกภาพเดียว</option>
+            </select>
+            <div id="combineBox">
+              <label>รูปสำหรับช่องที่เลือก</label>
+              <input id="cellUpload" type="file" accept="image/*">
+              <button id="fillSelectedBtn" class="secondary">ใส่รูปลงพื้นที่ที่เลือก</button>
+            </div>
+            <div id="splitBox" style="display:none;">
+              <label>รูปเดียวสำหรับแยกตามตาราง</label>
+              <input id="splitUpload" type="file" accept="image/*">
+              <button id="splitBtn" class="secondary">แยกภาพเข้าช่องทั้งหมด</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-page="layer">
+          <div class="card">
+            <h2>การเลือกพื้นที่</h2>
+            <label>ระบบเลือกพื้นที่</label>
+            <select id="selectionEnabled">
+              <option value="on">เปิดการเลือก</option>
+              <option value="off">ปิดการเลือก / View Mode</option>
+            </select>
+            <label>วิธีเลือก</label>
+            <select id="selectMode">
+              <option value="click">แตะ / คลิก</option>
+              <option value="drag">ลากครอบ</option>
+            </select>
+            <label>ระดับการเลือก</label>
+            <select id="selectLevel">
+              <option value="major">ช่องใหญ่</option>
+              <option value="minor">ช่องย่อย</option>
+            </select>
+            <button id="clearSelectionBtn" class="secondary">ล้างการเลือก</button>
+            <button id="deleteSelectedBtn" class="danger">ลบเฉพาะส่วนที่เลือก</button>
+            <p class="hint">ปุ่มลอยใช้สลับ ☝ เลือกช่อง / ✋ View Mode: ใช้สองนิ้วซูมและเลื่อนภาพ</p>
+          </div>
+        </section>
+
+        <section class="page" data-page="grid">
+          <div class="card">
+            <h2>ตารางซ้อน</h2>
+            <label>โหมดตาราง</label>
+            <select id="gridGlobalMode">
+              <option value="custom">เลือกเปิด/ปิดเอง</option>
+              <option value="all">เปิดทั้งหมด</option>
+              <option value="none">ปิดทั้งหมด</option>
+            </select>
+            <label>ตารางหลัก</label>
+            <select id="showMajorGrid">
+              <option value="yes">เปิด</option>
+              <option value="no">ปิด</option>
+            </select>
+            <div class="row">
+              <div><label>ชื่อตารางหลัก</label><input id="majorGridName" type="text" value="ตารางหลัก"></div>
+              <div><label>สีตารางหลัก</label><input id="majorColor" type="color" value="#111111"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>ตารางย่อย</h2>
+            <div id="minorGridList"></div>
+            <button id="addMinorGridBtn" class="secondary">+ เพิ่มตารางย่อย</button>
+          </div>
+        </section>
+
+        <section class="page" data-page="export">
+          <div class="card">
+            <h2>ส่งออก</h2>
+            <label>Zoom</label>
+            <input id="zoom" type="range" min="10" max="250" value="80">
+            <div id="zoomText" class="status">80%</div>
+            <label>ตอนดาวน์โหลดให้ติดตารางไหม</label>
+            <select id="exportGridMode">
+              <option value="with">ติดตาราง</option>
+              <option value="without">ไม่ติดตาราง</option>
+            </select>
+            <button id="downloadAllBtn" class="good">ดาวน์โหลดภาพรวม PNG</button>
+            <button id="downloadSelectedBtn" class="secondary">ดาวน์โหลดเฉพาะส่วนที่เลือก</button>
+            <button id="downloadProjectFileBtn" class="secondary">ดาวน์โหลดไฟล์โปรเจกต์ .json</button>
+          </div>
+        </section>
+
+        <section class="page" data-page="share">
+          <div class="card">
+            <h2>โปรเจกต์ / ห้อง</h2>
+            <div id="projectStatus" class="status">ยังไม่ได้เชื่อมห้อง</div>
+            <button id="saveProjectBtn" class="good">เซฟขึ้นบัญชี / Firebase</button>
+            <button id="copyProjectBtn" class="secondary">คัดลอกโปรเจกต์เป็นข้อความ</button>
+            <button id="backHomeBtn" class="secondary">กลับหน้าแรก</button>
+          </div>
+          <div class="card">
+            <h2>แชร์ด้วยลิงก์</h2>
+            <button id="copyShareLinkBtn" class="secondary">คัดลอกลิงก์โปรเจกต์</button>
+            <p class="hint">ลิงก์ใช้จริงเมื่อเว็บถูกโฮสต์ออนไลน์และต่อฐานข้อมูลกลาง</p>
+          </div>
+          <div class="card">
+            <h2>แชร์ด้วย Code</h2>
+            <label>อายุ Code</label>
+            <select id="codeExpireMode">
+              <option value="forever">ถาวร</option>
+              <option value="10m">10 นาที</option>
+              <option value="1h">1 ชั่วโมง</option>
+              <option value="24h">24 ชั่วโมง</option>
+            </select>
+            <button id="generateCodeBtn">สร้าง / รีโค้ดใหม่</button>
+            <button id="toggleCodeBtn" class="secondary">เปิด / ปิด Code</button>
+            <div id="shareCodeBox" class="status">ยังไม่มี Code</div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBH9clABBaRxRB-h_2lP2MvO6qO34nO-Jw",
       authDomain: "ratweb-26cd0.firebaseapp.com",
@@ -462,11 +471,14 @@ canvas { display:block; background:#fff; }
     };
 
     let db = null;
+    let auth = null;
+    let currentUser = null;
     let roomRef = null;
     let isApplyingRemote = false;
     let saveTimer = null;
     let roomStatus = { online: false, hostLastSeen: null };
     let shortcutStatusRefs = [];
+    let presenceTimer = null;
 
     let viewScale = 0.8;
     let panX = 0;
@@ -479,15 +491,13 @@ canvas { display:block; background:#fff; }
         if (typeof firebase === 'undefined') return false;
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.database();
+        auth = firebase.auth();
         return true;
       } catch (err) {
         console.error('Firebase init error:', err);
+        alert('Firebase init error: ' + err.message);
         return false;
       }
-    }
-
-    function safeCode(code){
-      return String(code || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
     }
 
     initFirebase();
@@ -501,20 +511,24 @@ canvas { display:block; background:#fff; }
 
     const $ = id => document.getElementById(id);
     const els = {
-      homeScreen: $('homeScreen'), appMain: $('appMain'), projectNameInput: $('projectNameInput'), createProjectBtn: $('createProjectBtn'), joinCodeInput: $('joinCodeInput'), joinProjectBtn: $('joinProjectBtn'), loadLocalProjectBtn: $('loadLocalProjectBtn'), shortcutNameInput: $('shortcutNameInput'), shortcutCodeInput: $('shortcutCodeInput'), addShortcutBtn: $('addShortcutBtn'), refreshShortcutBtn: $('refreshShortcutBtn'), roomShortcutList: $('roomShortcutList'),
+      homeScreen: $('homeScreen'), appMain: $('appMain'), authBox: $('authBox'), authEmail: $('authEmail'), authPassword: $('authPassword'), signInBtn: $('signInBtn'), registerBtn: $('registerBtn'), googleSignInBtn: $('googleSignInBtn'), signOutBtn: $('signOutBtn'), authStatus: $('authStatus'), userStatus: $('userStatus'), projectHomeBox: $('projectHomeBox'),
+      projectNameInput: $('projectNameInput'), createProjectBtn: $('createProjectBtn'), joinCodeInput: $('joinCodeInput'), joinProjectBtn: $('joinProjectBtn'), loadCloudProjectBtn: $('loadCloudProjectBtn'), exportProjectFileBtn: $('exportProjectFileBtn'), importProjectFileInput: $('importProjectFileInput'),
+      shortcutNameInput: $('shortcutNameInput'), shortcutCodeInput: $('shortcutCodeInput'), addShortcutBtn: $('addShortcutBtn'), refreshShortcutBtn: $('refreshShortcutBtn'), roomShortcutList: $('roomShortcutList'),
       statusText: $('statusText'), openMenuBtn: $('openMenuBtn'), closeSheetBtn: $('closeSheetBtn'),
       selectToggleBtn: $('selectToggleBtn'), zoomInBtn: $('zoomInBtn'), zoomOutBtn: $('zoomOutBtn'),
       cols: $('cols'), rows: $('rows'), cellW: $('cellW'), cellH: $('cellH'), buildBtn: $('buildBtn'), gridInfo: $('gridInfo'),
       mode: $('mode'), combineBox: $('combineBox'), splitBox: $('splitBox'), cellUpload: $('cellUpload'), fillSelectedBtn: $('fillSelectedBtn'), splitUpload: $('splitUpload'), splitBtn: $('splitBtn'),
       selectionEnabled: $('selectionEnabled'), selectMode: $('selectMode'), selectLevel: $('selectLevel'), clearSelectionBtn: $('clearSelectionBtn'), deleteSelectedBtn: $('deleteSelectedBtn'),
       gridGlobalMode: $('gridGlobalMode'), showMajorGrid: $('showMajorGrid'), majorGridName: $('majorGridName'), majorColor: $('majorColor'), minorGridList: $('minorGridList'), addMinorGridBtn: $('addMinorGridBtn'),
-      zoom: $('zoom'), zoomText: $('zoomText'), exportGridMode: $('exportGridMode'), downloadAllBtn: $('downloadAllBtn'), downloadSelectedBtn: $('downloadSelectedBtn'), projectStatus: $('projectStatus'), saveProjectBtn: $('saveProjectBtn'), copyProjectBtn: $('copyProjectBtn'), backHomeBtn: $('backHomeBtn'), copyShareLinkBtn: $('copyShareLinkBtn'), codeExpireMode: $('codeExpireMode'), generateCodeBtn: $('generateCodeBtn'), toggleCodeBtn: $('toggleCodeBtn'), shareCodeBox: $('shareCodeBox')
+      zoom: $('zoom'), zoomText: $('zoomText'), exportGridMode: $('exportGridMode'), downloadAllBtn: $('downloadAllBtn'), downloadSelectedBtn: $('downloadSelectedBtn'), downloadProjectFileBtn: $('downloadProjectFileBtn'),
+      projectStatus: $('projectStatus'), saveProjectBtn: $('saveProjectBtn'), copyProjectBtn: $('copyProjectBtn'), backHomeBtn: $('backHomeBtn'), copyShareLinkBtn: $('copyShareLinkBtn'), codeExpireMode: $('codeExpireMode'), generateCodeBtn: $('generateCodeBtn'), toggleCodeBtn: $('toggleCodeBtn'), shareCodeBox: $('shareCodeBox')
     };
 
     let currentProject = {
       id: null,
       name: 'Untitled Project',
       owner: true,
+      ownerUid: null,
       shareCode: null,
       codeEnabled: false,
       codeExpiresAt: null,
@@ -524,25 +538,22 @@ canvas { display:block; background:#fff; }
     let state = {
       cols: 4, rows: 4, cellW: 160, cellH: 160,
       cells: [], selected: new Set(), dragStart: null,
-      // assets เก็บรูปจริงแค่ครั้งเดียว ส่วน cells จะอ้างอิงด้วย assetId
-      // แก้ปัญหา 10×10 แล้ว Firebase ไม่ส่งรูป เพราะรูปเดิมถูกยัดซ้ำ 100 รอบ
       assets: {},
       minorGrids: [{ id: makeId(), name: 'ตารางย่อย 1', enabled: true, color: '#ff3333', spacing: 10, unit: 'px', subdiv: 2 }]
     };
 
+    function uid(){ return currentUser?.uid || null; }
     function makeId(){ return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())); }
+    function safeCode(code){ return String(code || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, ''); }
     function clampInt(v,min,max){ v=parseInt(v,10); if(Number.isNaN(v)) v=min; return Math.max(min,Math.min(max,v)); }
     function pxFromUnit(v,u){ v=Number(v)||1; if(u==='mm') return v*3.7795275591; if(u==='cm') return v*37.795275591; return v; }
     function keyOf(c,r,sc=0,sr=0){ return `${c},${r},${sc},${sr}`; }
     function parseKey(k){ const [col,row,subCol,subRow]=k.split(',').map(Number); return {col,row,subCol,subRow}; }
-    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[x])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x])); }
 
     function simpleHash(str){
       let h = 2166136261;
-      for(let i=0;i<str.length;i++){
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
+      for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
       return (h >>> 0).toString(36);
     }
 
@@ -556,8 +567,6 @@ canvas { display:block; background:#fff; }
     }
 
     function canvasToDataURL(canvas, quality = 0.72){
-      // JPEG เล็กกว่า PNG มาก เหมาะกับ Firebase Realtime Database
-      // ถ้าต้องการพื้นหลังโปร่งใสจริง ควรใช้ Firebase Storage แทน
       return canvas.toDataURL('image/jpeg', quality);
     }
 
@@ -577,20 +586,16 @@ canvas { display:block; background:#fff; }
         img.onerror = rej;
         img.src = URL.createObjectURL(file);
       });
-
       const scale = Math.min(1, maxSide / Math.max(raw.width, raw.height));
       const w = Math.max(1, Math.round(raw.width * scale));
       const h = Math.max(1, Math.round(raw.height * scale));
       const off = document.createElement('canvas');
-      off.width = w;
-      off.height = h;
+      off.width = w; off.height = h;
       const o = off.getContext('2d');
-      o.fillStyle = '#fff';
-      o.fillRect(0,0,w,h);
+      o.fillStyle = '#fff'; o.fillRect(0,0,w,h);
       o.drawImage(raw,0,0,w,h);
       return registerAssetFromDataURL(canvasToDataURL(off, quality));
     }
-
 
     function isViewMode(){ return els.selectionEnabled.value === 'off'; }
 
@@ -603,8 +608,7 @@ canvas { display:block; background:#fff; }
     }
 
     function centerCanvas(){
-      const w = canvas.width * viewScale;
-      const h = canvas.height * viewScale;
+      const w = canvas.width * viewScale, h = canvas.height * viewScale;
       const rect = workspace.getBoundingClientRect();
       panX = Math.max(8, (rect.width - w) / 2);
       panY = Math.max(8, (rect.height - h) / 2);
@@ -625,37 +629,20 @@ canvas { display:block; background:#fff; }
       applyCanvasTransform(true);
     }
 
-    function getDistance(a, b){
-      const dx = a.clientX - b.clientX;
-      const dy = a.clientY - b.clientY;
-      return Math.hypot(dx, dy);
-    }
-
-    function getCenter(a, b){
-      return {
-        x: (a.clientX + b.clientX) / 2,
-        y: (a.clientY + b.clientY) / 2
-      };
-    }
+    function getDistance(a, b){ return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+    function getCenter(a, b){ return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
 
     function startPinch(){
       const pts = [...activePointers.values()];
       if(pts.length < 2 || !isViewMode()) return;
-
       wrap.classList.remove('smooth');
       const center = getCenter(pts[0], pts[1]);
       const workspaceRect = workspace.getBoundingClientRect();
-
       const localCenterX = center.x - workspaceRect.left;
       const localCenterY = center.y - workspaceRect.top;
-
       pinchState = {
         startDistance: Math.max(1, getDistance(pts[0], pts[1])),
-        startCenterX: localCenterX,
-        startCenterY: localCenterY,
         startScale: viewScale,
-        startPanX: panX,
-        startPanY: panY,
         focalX: (localCenterX - panX) / viewScale,
         focalY: (localCenterY - panY) / viewScale
       };
@@ -664,35 +651,83 @@ canvas { display:block; background:#fff; }
     function updatePinch(){
       const pts = [...activePointers.values()];
       if(pts.length < 2 || !pinchState || !isViewMode()) return;
-
       const center = getCenter(pts[0], pts[1]);
       const workspaceRect = workspace.getBoundingClientRect();
       const localCenterX = center.x - workspaceRect.left;
       const localCenterY = center.y - workspaceRect.top;
       const distance = Math.max(1, getDistance(pts[0], pts[1]));
-
       const ratio = distance / pinchState.startDistance;
       viewScale = Math.max(0.1, Math.min(2.5, pinchState.startScale * ratio));
-
-      // สองนิ้วเลื่อนภาพได้ด้วยการเลื่อนจุดกึ่งกลางนิ้ว
-      // และซูมโดยยึดจุดกึ่งกลางนิ้วเป็นจุดอ้างอิง
       panX = localCenterX - pinchState.focalX * viewScale;
       panY = localCenterY - pinchState.focalY * viewScale;
-
       applyCanvasTransform(false);
     }
 
     function showApp(){ els.homeScreen.classList.add('hidden'); els.appMain.classList.remove('hidden'); updateProjectStatus(); setTimeout(centerCanvas, 60); }
     function showHome(){ els.appMain.classList.add('hidden'); els.homeScreen.classList.remove('hidden'); renderRoomShortcuts(); }
 
+    async function signInEmail(){
+      const email = els.authEmail.value.trim();
+      const pass = els.authPassword.value;
+      if(!email || !pass) return alert('กรุณากรอก Email และ Password');
+      try { await auth.signInWithEmailAndPassword(email, pass); }
+      catch(e){ alert('Sign in ไม่สำเร็จ: ' + e.message); }
+    }
+
+    async function registerEmail(){
+      const email = els.authEmail.value.trim();
+      const pass = els.authPassword.value;
+      if(!email || !pass) return alert('กรุณากรอก Email และ Password');
+      try { await auth.createUserWithEmailAndPassword(email, pass); }
+      catch(e){ alert('Register ไม่สำเร็จ: ' + e.message); }
+    }
+
+    async function signInGoogle(){
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+      } catch(e) {
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          await auth.signInWithRedirect(provider);
+        } catch(err) {
+          alert('Google Sign in ไม่สำเร็จ: ' + err.message);
+        }
+      }
+    }
+
+    function onAuthChanged(user){
+      currentUser = user || null;
+      if(user){
+        els.authBox.classList.add('hidden');
+        els.projectHomeBox.classList.remove('hidden');
+        els.userStatus.innerHTML = `ล็อกอินแล้ว<br>Email: ${escapeHtml(user.email || '-')}<br>UID: ${escapeHtml(user.uid)}`;
+        renderRoomShortcuts();
+      } else {
+        els.authBox.classList.remove('hidden');
+        els.projectHomeBox.classList.add('hidden');
+        els.authStatus.textContent = 'ยังไม่ได้ล็อกอิน';
+        showHome();
+      }
+    }
+
     function createProject(name){
-      currentProject = { id:'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8), name:name||'Untitled Project', owner:true, shareCode:null, codeEnabled:false, codeExpiresAt:null, realtimeEnabled:false };
+      if(!currentUser) return alert('กรุณาล็อกอินก่อน');
+      currentProject = {
+        id:'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+        name:name||'Untitled Project',
+        owner:true,
+        ownerUid: uid(),
+        shareCode:null,
+        codeEnabled:false,
+        codeExpiresAt:null,
+        realtimeEnabled:false
+      };
       buildGrid();
       if(initFirebase()) currentProject.realtimeEnabled = true;
-      saveProjectLocal();
       saveProjectCloudNow();
       subscribeProject(currentProject.id);
-      setHostOnline(currentProject.id, true);
+      startHostPresence();
       showApp();
       openSheet('setup');
     }
@@ -709,10 +744,7 @@ canvas { display:block; background:#fff; }
       return {
         project: currentProject,
         grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids },
-        assets,
-        images,
-        updatedAt:Date.now(),
-        status: roomStatus
+        assets, images, updatedAt:Date.now()
       };
     }
 
@@ -725,11 +757,8 @@ canvas { display:block; background:#fff; }
       els.cols.value=state.cols; els.rows.value=state.rows; els.cellW.value=state.cellW; els.cellH.value=state.cellH;
       canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
       state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
-
       const images=data.images||[];
       const loadedAssets = {};
-
-      // โหมดใหม่: images เก็บแค่ id แล้วไปดึงรูปจาก assets ทำให้รูปไม่ถูกส่งซ้ำ 100 ช่อง
       if(data.assets){
         const ids = new Set();
         for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) if(images[r]?.[c]) ids.add(images[r][c]);
@@ -745,7 +774,6 @@ canvas { display:block; background:#fff; }
           if(id && loadedAssets[id]) state.cells[r][c]=loadedAssets[id];
         }
       } else {
-        // รองรับเซฟเก่า: images เป็น dataURL ตรง ๆ
         for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
           const src=images[r]?.[c];
           if(src){
@@ -762,21 +790,38 @@ canvas { display:block; background:#fff; }
       renderMinorGridList(); updateInfo(); updateProjectStatus(); render(); setTimeout(centerCanvas, 60);
     }
 
-    function saveProjectLocal(){ localStorage.setItem('imageGridProject:last', JSON.stringify(getProjectData())); updateProjectStatus(); }
-
-    function saveProjectCloudNow(){
+    async function saveProjectCloudNow(){
       if(isApplyingRemote) return;
-      if(!initFirebase() || !currentProject.id) return;
+      if(!initFirebase() || !currentProject.id || !currentUser) return;
       currentProject.realtimeEnabled = true;
+      if(!currentProject.ownerUid) currentProject.ownerUid = uid();
       const data = getProjectData();
-      db.ref('rooms/' + currentProject.id).set(data).catch(err => alert('บันทึกขึ้น Firebase ไม่สำเร็จ: ' + err.message));
-      if(currentProject.shareCode){
-        db.ref('codes/' + safeCode(currentProject.shareCode)).set({
-          projectId: currentProject.id,
-          enabled: currentProject.codeEnabled,
-          expiresAt: currentProject.codeExpiresAt || null,
-          updatedAt: Date.now()
-        }).catch(err => alert('บันทึก Code ไม่สำเร็จ: ' + err.message));
+
+      const roomData = JSON.parse(JSON.stringify(data));
+      delete roomData.status;
+
+      try {
+        await db.ref('rooms/' + currentProject.id).update(roomData);
+        await db.ref('users/' + uid() + '/projects/' + currentProject.id).set({
+          id: currentProject.id,
+          name: currentProject.name,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP,
+          owner: currentProject.owner === true
+        });
+        await db.ref('users/' + uid() + '/lastProjectId').set(currentProject.id);
+
+        if(currentProject.shareCode){
+          await db.ref('codes/' + safeCode(currentProject.shareCode)).set({
+            projectId: currentProject.id,
+            enabled: currentProject.codeEnabled,
+            expiresAt: currentProject.codeExpiresAt || null,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+
+        if(currentProject.owner) startHostPresence();
+      } catch(err) {
+        alert('บันทึกขึ้น Firebase ไม่สำเร็จ: ' + err.message);
       }
       updateProjectStatus();
     }
@@ -785,6 +830,23 @@ canvas { display:block; background:#fff; }
       if(isApplyingRemote) return;
       clearTimeout(saveTimer);
       saveTimer = setTimeout(saveProjectCloudNow, 500);
+    }
+
+    async function loadLatestCloudProject(){
+      if(!currentUser) return alert('กรุณาล็อกอินก่อน');
+      const idSnap = await db.ref('users/' + uid() + '/lastProjectId').get();
+      const projectId = idSnap.val();
+      if(!projectId) return alert('บัญชีนี้ยังไม่มีโปรเจกต์บน Firebase');
+      const snap = await db.ref('rooms/' + projectId).get();
+      const data = snap.val();
+      if(!data) return alert('ไม่พบโปรเจกต์ล่าสุด');
+      await loadProjectData(data);
+      currentProject.id = projectId;
+      currentProject.owner = data.project?.ownerUid === uid() || data.project?.owner === true;
+      subscribeProject(projectId);
+      if(currentProject.owner) startHostPresence();
+      showApp();
+      openSheet('setup');
     }
 
     function subscribeProject(projectId){
@@ -798,18 +860,28 @@ canvas { display:block; background:#fff; }
         await loadProjectData(data);
         currentProject.id = projectId;
         currentProject.realtimeEnabled = true;
+        currentProject.owner = data.project?.ownerUid === uid();
         isApplyingRemote = false;
       }, err => alert('อ่านห้องจาก Firebase ไม่สำเร็จ: ' + err.message));
     }
 
     function setHostOnline(projectId, isOnline){
       if(!initFirebase() || !projectId || !currentProject.owner) return;
-      roomStatus = { online: isOnline, hostLastSeen: Date.now() };
+      roomStatus = { online: isOnline, hostLastSeen: firebase.database.ServerValue.TIMESTAMP };
       const statusRef = db.ref('rooms/' + projectId + '/status');
       statusRef.set(roomStatus);
       if(isOnline){
         statusRef.onDisconnect().set({ online: false, hostLastSeen: firebase.database.ServerValue.TIMESTAMP });
       }
+    }
+
+    function startHostPresence(){
+      if(!currentProject.id || !currentProject.owner) return;
+      setHostOnline(currentProject.id, true);
+      clearInterval(presenceTimer);
+      presenceTimer = setInterval(() => {
+        if(currentProject.id && currentProject.owner) setHostOnline(currentProject.id, true);
+      }, 15000);
     }
 
     async function resolveCode(code){
@@ -835,31 +907,38 @@ canvas { display:block; background:#fff; }
       }
       await loadProjectData(data);
       currentProject.id = codeData.projectId;
-      currentProject.owner = false;
+      currentProject.owner = data.project?.ownerUid === uid();
       currentProject.realtimeEnabled = true;
       saveRoomShortcut(currentProject.id, currentProject.name, codeData.code);
       subscribeProject(currentProject.id);
+      await db.ref('users/' + uid() + '/lastProjectId').set(currentProject.id);
       showApp();
       openSheet('setup');
     }
 
-    function getRoomShortcuts(){
-      try { return JSON.parse(localStorage.getItem('imageGridRoomShortcuts') || '[]'); }
-      catch { return []; }
+    async function getRoomShortcuts(){
+      if(!currentUser) return [];
+      const snap = await db.ref('users/' + uid() + '/shortcuts').get();
+      const val = snap.val() || {};
+      return Object.values(val);
     }
 
-    function saveRoomShortcut(projectId, name, code){
+    async function saveRoomShortcut(projectId, name, code){
+      if(!currentUser) return;
       const clean = safeCode(code);
       if(!clean) return;
-      const list = getRoomShortcuts().filter(x => safeCode(x.code) !== clean && x.projectId !== projectId);
-      list.unshift({ projectId: projectId || '', name: name || 'Unnamed Server', code: clean, savedAt: Date.now() });
-      localStorage.setItem('imageGridRoomShortcuts', JSON.stringify(list.slice(0, 30)));
+      await db.ref('users/' + uid() + '/shortcuts/' + clean).set({
+        projectId: projectId || '',
+        name: name || 'Unnamed Server',
+        code: clean,
+        savedAt: firebase.database.ServerValue.TIMESTAMP
+      });
     }
 
-    function deleteRoomShortcut(code){
+    async function deleteRoomShortcut(code){
+      if(!currentUser) return;
       const clean = safeCode(code);
-      const list = getRoomShortcuts().filter(x => safeCode(x.code) !== clean);
-      localStorage.setItem('imageGridRoomShortcuts', JSON.stringify(list));
+      await db.ref('users/' + uid() + '/shortcuts/' + clean).remove();
       renderRoomShortcuts();
     }
 
@@ -868,10 +947,10 @@ canvas { display:block; background:#fff; }
       shortcutStatusRefs = [];
     }
 
-    function renderRoomShortcuts(){
-      if(!els.roomShortcutList) return;
+    async function renderRoomShortcuts(){
+      if(!els.roomShortcutList || !currentUser) return;
       clearShortcutListeners();
-      const list = getRoomShortcuts();
+      const list = await getRoomShortcuts();
       if(!list.length){
         els.roomShortcutList.innerHTML = '<div class="status">ยังไม่มีทางลัด</div>';
         return;
@@ -918,12 +997,6 @@ canvas { display:block; background:#fff; }
       shortcutStatusRefs.push({ ref, cb });
     }
 
-    function loadProjectLocal(){
-      const raw=localStorage.getItem('imageGridProject:last');
-      if(!raw) return alert('ยังไม่มีโปรเจกต์ที่เซฟไว้ในเครื่อง');
-      loadProjectData(JSON.parse(raw)); showApp(); openSheet('setup');
-    }
-
     function makeShareCode(){ return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(); }
     function getExpireTime(mode){ if(mode==='forever') return null; if(mode==='10m') return Date.now()+10*60*1000; if(mode==='1h') return Date.now()+60*60*1000; if(mode==='24h') return Date.now()+24*60*60*1000; return null; }
 
@@ -935,7 +1008,6 @@ canvas { display:block; background:#fff; }
       currentProject.codeEnabled=true;
       currentProject.codeExpiresAt=getExpireTime(els.codeExpireMode.value);
       if(initFirebase()) currentProject.realtimeEnabled = true;
-      saveProjectLocal();
       saveProjectCloudNow();
       subscribeProject(currentProject.id);
       updateProjectStatus();
@@ -944,12 +1016,11 @@ canvas { display:block; background:#fff; }
     function updateProjectStatus(){
       if(!els.projectStatus) return;
       const expireText=currentProject.codeExpiresAt?new Date(currentProject.codeExpiresAt).toLocaleString():'ถาวร';
-      els.projectStatus.innerHTML=`ชื่อ: ${currentProject.name}<br>ID: ${currentProject.id||'-'}<br>Real-time: ${currentProject.realtimeEnabled?'เปิด':'ยังไม่ได้ต่อ Firebase'}`;
-      els.shareCodeBox.innerHTML=currentProject.shareCode?`Code: <b>${currentProject.shareCode}</b><br>สถานะ: ${currentProject.codeEnabled?'เปิด':'ปิด'}<br>หมดอายุ: ${expireText}`:'ยังไม่มี Code';
+      els.projectStatus.innerHTML=`ชื่อ: ${escapeHtml(currentProject.name)}<br>ID: ${escapeHtml(currentProject.id||'-')}<br>Owner: ${currentProject.owner ? 'ใช่' : 'ไม่ใช่'}<br>Real-time: ${currentProject.realtimeEnabled?'เปิด':'ยังไม่ได้ต่อ Firebase'}`;
+      els.shareCodeBox.innerHTML=currentProject.shareCode?`Code: <b>${escapeHtml(currentProject.shareCode)}</b><br>สถานะ: ${currentProject.codeEnabled?'เปิด':'ปิด'}<br>หมดอายุ: ${expireText}`:'ยังไม่มี Code';
     }
 
     function copyText(text){ navigator.clipboard?.writeText(text).then(()=>alert('คัดลอกแล้ว')).catch(()=>prompt('คัดลอกข้อความนี้', text)); }
-
     function openSheet(tab='setup') { sheet.classList.add('open'); backdrop.classList.add('show'); setTab(tab); }
     function closeSheet() { sheet.classList.remove('open'); backdrop.classList.remove('show'); }
     function setTab(tab) {
@@ -1039,21 +1110,26 @@ canvas { display:block; background:#fff; }
     }
 
     function loadImage(file){ return loadImageCompressed(file, 900, 0.72); }
-    function markProjectChanged(){ saveProjectLocal(); queueCloudSave(); }
+    function markProjectChanged(){ queueCloudSave(); }
 
     async function fillSelected(){
       const file=els.cellUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
-      const img=await loadImage(file); if(!img) return alert('อ่านรูปไม่สำเร็จ'); for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; } render(); markProjectChanged();
+      const img=await loadImage(file); if(!img) return alert('อ่านรูปไม่สำเร็จ');
+      for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; }
+      render(); markProjectChanged();
     }
 
     async function splitImage(){
-      const file=els.splitUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); const img=await loadImage(file);
+      const file=els.splitUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน');
+      const img=await loadImage(file); if(!img) return alert('อ่านรูปไม่สำเร็จ');
       const pw=img.width/state.cols, ph=img.height/state.rows;
       for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
         const off=document.createElement('canvas'); off.width=state.cellW; off.height=state.cellH;
         const o=off.getContext('2d'); o.drawImage(img,c*pw,r*ph,pw,ph,0,0,state.cellW,state.cellH);
-        const piece = await registerAssetFromDataURL(canvasToDataURL(off, 0.72)); if(piece) state.cells[r][c]=piece;
-      } render(); markProjectChanged();
+        const piece = await registerAssetFromDataURL(canvasToDataURL(off, 0.72));
+        if(piece) state.cells[r][c]=piece;
+      }
+      render(); markProjectChanged();
     }
 
     function deleteSelected(){ for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=null; } state.selected.clear(); render(); markProjectChanged(); }
@@ -1067,8 +1143,7 @@ canvas { display:block; background:#fff; }
         const url = URL.createObjectURL(blob);
         download(url,'image-grid-builder.png');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        ctx.putImageData(oldImage,0,0);
-        render();
+        ctx.putImageData(oldImage,0,0); render();
       }, 'image/png');
     }
 
@@ -1083,17 +1158,43 @@ canvas { display:block; background:#fff; }
         const url = URL.createObjectURL(blob);
         download(url,'selected-grid-area.png');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        ctx.putImageData(oldImage,0,0);
-        render();
+        ctx.putImageData(oldImage,0,0); render();
       }, 'image/png');
+    }
+
+    function exportProjectFile(){
+      const data = JSON.stringify(getProjectData(), null, 2);
+      const blob = new Blob([data], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      download(url, (currentProject.name || 'image-grid-project') + '.json');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function importProjectFile(file){
+      if(!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        await loadProjectData(data);
+        currentProject.id = 'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+        currentProject.owner = true;
+        currentProject.ownerUid = uid();
+        currentProject.name = (currentProject.name || 'Imported Project') + ' Copy';
+        await saveProjectCloudNow();
+        subscribeProject(currentProject.id);
+        startHostPresence();
+        showApp();
+        openSheet('setup');
+      } catch(e) {
+        alert('นำเข้าไฟล์ไม่สำเร็จ: ' + e.message);
+      }
     }
 
     function syncSelectBtn(){
       const on=els.selectionEnabled.value==='on';
       els.selectToggleBtn.textContent=on?'☝':'✋';
       els.selectToggleBtn.style.background=on?'#2d64ff':'#252936';
-      pinchState = null;
-      activePointers.clear();
+      pinchState = null; activePointers.clear();
     }
 
     function renderMinorGridList(){
@@ -1123,15 +1224,23 @@ canvas { display:block; background:#fff; }
       render(); markProjectChanged();
     }
 
+    els.signInBtn.addEventListener('click', signInEmail);
+    els.registerBtn.addEventListener('click', registerEmail);
+    els.googleSignInBtn.addEventListener('click', signInGoogle);
+    els.signOutBtn.addEventListener('click', () => auth.signOut());
+
     els.createProjectBtn.addEventListener('click',()=>createProject(els.projectNameInput.value.trim()));
-    els.loadLocalProjectBtn.addEventListener('click',loadProjectLocal);
+    els.loadCloudProjectBtn.addEventListener('click', loadLatestCloudProject);
+    els.exportProjectFileBtn.addEventListener('click', exportProjectFile);
+    els.importProjectFileInput.addEventListener('change', e => importProjectFile(e.target.files[0]));
+
     els.addShortcutBtn.addEventListener('click', async ()=>{
       const code = safeCode(els.shortcutCodeInput.value);
       const name = els.shortcutNameInput.value.trim() || code || 'Unnamed Server';
       if(!code) return alert('กรุณาใส่ Server Code ก่อน');
       let projectId = '';
       try { const data = await resolveCode(code); projectId = data?.projectId || ''; } catch {}
-      saveRoomShortcut(projectId, name, code);
+      await saveRoomShortcut(projectId, name, code);
       els.shortcutNameInput.value = '';
       els.shortcutCodeInput.value = '';
       renderRoomShortcuts();
@@ -1143,12 +1252,12 @@ canvas { display:block; background:#fff; }
       try { await joinByCode(code); }
       catch(err){ alert('Join ไม่สำเร็จ: ' + err.message); }
     });
-    els.saveProjectBtn.addEventListener('click',()=>{ saveProjectLocal(); alert('เซฟแล้ว'); });
+    els.saveProjectBtn.addEventListener('click',()=>{ saveProjectCloudNow(); alert('เซฟขึ้น Firebase แล้ว'); });
     els.copyProjectBtn.addEventListener('click',()=>copyText(JSON.stringify(getProjectData())));
     els.backHomeBtn.addEventListener('click',showHome);
     els.copyShareLinkBtn.addEventListener('click',()=>copyText(location.href.split('#')[0]+'#project='+currentProject.id));
     els.generateCodeBtn.addEventListener('click',generateCode);
-    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectLocal(); saveProjectCloudNow(); updateProjectStatus(); });
+    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectCloudNow(); updateProjectStatus(); });
 
     document.querySelectorAll('[data-open-tab]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.openTab)));
     document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
@@ -1163,6 +1272,7 @@ canvas { display:block; background:#fff; }
     els.deleteSelectedBtn.addEventListener('click',deleteSelected);
     els.downloadAllBtn.addEventListener('click',downloadAll);
     els.downloadSelectedBtn.addEventListener('click',downloadSelected);
+    els.downloadProjectFileBtn.addEventListener('click', exportProjectFile);
     els.zoom.addEventListener('input',()=>setZoom(Number(els.zoom.value)));
     els.zoomInBtn.addEventListener('click',()=>setZoom(Number(els.zoom.value)+10));
     els.zoomOutBtn.addEventListener('click',()=>setZoom(Number(els.zoom.value)-10));
@@ -1186,25 +1296,19 @@ canvas { display:block; background:#fff; }
     });
     window.addEventListener('pointerup',()=>state.dragStart=null);
 
-    // View Mode gestures: จับ event ที่ workspace แทน canvasWrap
-    // เพื่อให้สองนิ้วเลื่อน/ซูมได้แม้นิ้วแตะพื้นที่ว่างรอบรูป
     workspace.addEventListener('pointerdown', e => {
       if(!isViewMode()) return;
-
       e.preventDefault();
       activePointers.set(e.pointerId, e);
       try { workspace.setPointerCapture(e.pointerId); } catch {}
-
       if(activePointers.size === 2) startPinch();
     }, { passive: false });
 
     workspace.addEventListener('pointermove', e => {
       if(!isViewMode()) return;
       if(!activePointers.has(e.pointerId)) return;
-
       e.preventDefault();
       activePointers.set(e.pointerId, e);
-
       if(activePointers.size >= 2){
         if(!pinchState) startPinch();
         updatePinch();
@@ -1213,21 +1317,18 @@ canvas { display:block; background:#fff; }
 
     function clearPointer(e){
       if(activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
-
       if(activePointers.size < 2){
         pinchState = null;
         wrap.classList.add('smooth');
         setTimeout(() => wrap.classList.remove('smooth'), 180);
         return;
       }
-
       if(isViewMode()) startPinch();
     }
 
     workspace.addEventListener('pointerup', clearPointer, { passive: false });
     workspace.addEventListener('pointercancel', clearPointer, { passive: false });
     workspace.addEventListener('lostpointercapture', clearPointer, { passive: false });
-
     window.addEventListener('resize', () => setTimeout(centerCanvas, 80));
 
     renderMinorGridList();
@@ -1235,7 +1336,8 @@ canvas { display:block; background:#fff; }
     setZoom(80);
     syncSelectBtn();
     showHome();
-    renderRoomShortcuts();
+
+    auth.onAuthStateChanged(onAuthChanged);
 
     window.addEventListener('load', async () => {
       const hash = new URLSearchParams(location.hash.replace('#',''));
@@ -1247,9 +1349,10 @@ canvas { display:block; background:#fff; }
           if(data){
             await loadProjectData(data);
             currentProject.id = projectId;
-            currentProject.owner = false;
+            currentProject.owner = data.project?.ownerUid === uid();
             currentProject.realtimeEnabled = true;
             subscribeProject(projectId);
+            if(currentProject.owner) startHostPresence();
             showApp();
             openSheet('setup');
           }
@@ -1260,9 +1363,14 @@ canvas { display:block; background:#fff; }
     });
 
     window.addEventListener('beforeunload', () => {
-      if(currentProject.owner && currentProject.id){
-        setHostOnline(currentProject.id, false);
+      if(presenceTimer) clearInterval(presenceTimer);
+      if(currentProject.owner && currentProject.id && db){
+        db.ref('rooms/' + currentProject.id + '/status').set({
+          online: false,
+          hostLastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
       }
     });
-  </script></body>
+  </script>
+</body>
 </html>
