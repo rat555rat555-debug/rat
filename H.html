@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Image Grid Builder</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0c0d12;
+      color: #f5f5f5;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hidden { display: none !important; }
+    .homeScreen {
+      width: 100%; height: 100%; display: grid; place-items: center; padding: 18px;
+      background: radial-gradient(circle at top, #26304d, #0c0d12 60%);
+    }
+    .homeCard {
+      width: min(440px, 100%); background: #15171d; border: 1px solid #2a2d36;
+      border-radius: 24px; padding: 18px; box-shadow: 0 20px 70px rgba(0,0,0,.45);
+      animation: fadeIn .22s ease both;
+    }
+    .homeCard h1 { margin: 0 0 6px; font-size: 24px; }
+    .homeCard p { margin: 0 0 14px; color: #aeb3c2; font-size: 13px; }
+    .homeLine { height: 1px; background: #2a2d36; margin: 14px 0; }
+    button, input, select {
+      font: inherit;
+      border: 1px solid #343846;
+      border-radius: 12px;
+      background: #151821;
+      color: #fff;
+      padding: 10px;
+      transition: transform .15s ease, background .15s ease, opacity .15s ease;
+    }
+    button:active { transform: scale(.96); }
+    button { cursor: pointer; font-weight: 700; background: #2d64ff; border-color: #2d64ff; }
+    button.secondary { background: #252936; border-color: #343846; }
+    button.danger { background: #d13b3b; border-color: #d13b3b; }
+    button.good { background: #239b58; border-color: #239b58; }
+    label { display: block; color: #b9bfce; font-size: 12px; margin: 10px 0 5px; }
+    input, select { width: 100%; }
+    input[type="color"] { height: 42px; padding: 4px; }
+    input[type="file"] { font-size: 12px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .app {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-rows: 54px 1fr 72px;
+      background: radial-gradient(circle at top, #20263a, #0c0d12 55%);
+    }
+
+    .topbar {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(17,19,27,.92);
+      border-bottom: 1px solid #272b38;
+      z-index: 5;
+    }
+    .topbar b { font-size: 15px; }
+    .topbar span { display:block; font-size: 11px; color:#aeb3c2; }
+    .topbar button { width: auto; padding: 8px 12px; border-radius: 999px; }
+
+    .workspace {
+      position: relative;
+      overflow: auto;
+      padding: 14px;
+      touch-action: pan-x pan-y;
+    }
+    .canvasStage {
+      min-width: max-content;
+      min-height: max-content;
+      padding: 10px 60px 120px 10px;
+    }
+    .canvasWrap {
+      display: inline-block;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      transform-origin: top left;
+      transition: transform .18s ease;
+      touch-action: none;
+    }
+    canvas { display:block; background:#fff; }
+
+    .floatTools {
+      position: fixed;
+      right: 12px;
+      top: 68px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+    .floatTools button {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      padding: 0;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+    }
+
+    .bottomBar {
+      height: 72px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 8px 10px 10px;
+      background: rgba(17,19,27,.95);
+      border-top: 1px solid #272b38;
+      z-index: 30;
+    }
+    .bottomBar button {
+      min-width: 0;
+      padding: 8px 4px;
+      border-radius: 16px;
+      font-size: 11px;
+      background: #252936;
+      border-color: #343846;
+    }
+    .bottomBar button.active { background:#2d64ff; border-color:#2d64ff; }
+
+    .sheetBackdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 35;
+    }
+    .sheetBackdrop.show { display:block; }
+
+    .sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72vh;
+      z-index: 40;
+      background: #15171d;
+      border-radius: 24px 24px 0 0;
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 -20px 70px rgba(0,0,0,.55);
+      transform: translateY(105%);
+      transition: transform .25s cubic-bezier(.2,.8,.2,1);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheetHead {
+      padding: 10px 12px 4px;
+      text-align: center;
+      color: #aeb3c2;
+      font-size: 12px;
+    }
+    .handle {
+      width: 58px;
+      height: 5px;
+      background: #747d92;
+      border-radius: 999px;
+      margin: 0 auto 8px;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      padding: 8px 12px 10px;
+      border-bottom: 1px solid #272b38;
+    }
+    .tabs button {
+      background: #252936;
+      border-color: #343846;
+      border-radius: 999px;
+      padding: 9px 4px;
+      font-size: 12px;
+    }
+    .tabs button.active { background:#2d64ff; border-color:#2d64ff; }
+    .sheetBody { overflow-y: auto; padding: 12px; }
+    .page { display:none; animation: fadeIn .18s ease both; }
+    .page.active { display:block; }
+    @keyframes fadeIn { from { opacity:.4; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+    .card {
+      background:#1b1e26;
+      border:1px solid #2a2d36;
+      border-radius:18px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .card h2 { margin:0 0 10px; font-size:15px; }
+    .status {
+      color:#b9bfce;
+      font-size:12px;
+      line-height:1.5;
+      background:#111319;
+      border:1px solid #2a2d36;
+      border-radius:12px;
+      padding:10px;
+      margin-top:10px;
+    }
+    .hint { color:#9ca3b8; font-size:12px; line-height:1.45; }
+
+    @media (min-width: 901px) {
+      .app { grid-template-rows: 58px 1fr; grid-template-columns: 330px 1fr; }
+      .topbar { grid-column: 1 / 3; }
+      .workspace { grid-column: 2; grid-row: 2; }
+      .sheetBackdrop, .bottomBar, .floatTools { display:none !important; }
+      .sheet {
+        position: static;
+        grid-column: 1;
+        grid-row: 2;
+        height: auto;
+        transform: none;
+        border-radius: 0;
+        border-top: 0;
+        display: grid;
+      }
+      .sheetHead { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <section id="homeScreen" class="homeScreen">
+    <div class="homeCard">
+      <h1>Image Grid Builder</h1>
+      <p>สร้างโปรเจกต์ / เข้าร่วมห้อง / โหลดงานเดิม</p>
+
+      <label>ชื่อโปรเจกต์</label>
+      <input id="projectNameInput" type="text" value="My Grid Project" />
+      <button id="createProjectBtn">สร้างโปรเจกต์ใหม่</button>
+
+      <div class="homeLine"></div>
+
+      <label>Join Code</label>
+      <input id="joinCodeInput" type="text" placeholder="ใส่โค้ดห้อง เช่น ABCD-1234" />
+      <button id="joinProjectBtn" class="secondary">เข้าร่วมโปรเจกต์ด้วยโค้ด</button>
+
+      <div class="homeLine"></div>
+      <button id="loadLocalProjectBtn" class="secondary">โหลดโปรเจกต์ที่เซฟในเครื่อง</button>
+      <p class="hint">Real-time ต้องต่อ Firebase Config ก่อน เวอร์ชันนี้วางระบบห้องและเซฟโปรเจกต์ให้แล้ว</p>
+    </div>
+  </section>
+
+  <main id="appMain" class="app hidden">
+    <header class="topbar">
+      <div><b>Image Grid Builder</b><span id="statusText">พร้อมใช้งาน</span></div>
+      <button id="openMenuBtn">เมนู</button>
+    </header>
+
+    <section class="workspace" id="workspace">
+      <div class="canvasStage">
+        <div id="canvasWrap" class="canvasWrap"><canvas id="canvas"></canvas></div>
+      </div>
+    </section>
+
+    <div class="floatTools">
+      <button id="selectToggleBtn">☝</button>
+      <button id="zoomInBtn">＋</button>
+      <button id="zoomOutBtn">－</button>
+    </div>
+
+    <nav class="bottomBar">
+      <button data-open-tab="setup" class="active">ตั้งค่า</button>
+      <button data-open-tab="layer">เลเยอร์</button>
+      <button data-open-tab="grid">Grid</button>
+      <button data-open-tab="export">Export</button>
+      <button id="closeSheetBtn">ปิด</button>
+    </nav>
+
+    <div id="sheetBackdrop" class="sheetBackdrop"></div>
+
+    <aside id="sheet" class="sheet open">
+      <div class="sheetHead" id="sheetHead"><div class="handle"></div>แตะนอกเมนูหรือกดปิดเพื่อปิด</div>
+      <div class="tabs">
+        <button data-tab="setup" class="active">ตั้งค่า</button>
+        <button data-tab="layer">เลเยอร์</button>
+        <button data-tab="grid">Grid</button>
+        <button data-tab="export">Export</button>
+        <button data-tab="share">แชร์</button>
+      </div>
+
+      <div class="sheetBody">
+        <section class="page active" data-page="setup">
+          <div class="card">
+            <h2>ตารางหลัก</h2>
+            <div class="row">
+              <div><label>คอลัมน์</label><input id="cols" type="number" min="1" max="100" value="4"></div>
+              <div><label>แถว</label><input id="rows" type="number" min="1" max="100" value="4"></div>
+            </div>
+            <div class="row">
+              <div><label>กว้างต่อช่อง px</label><input id="cellW" type="number" min="10" value="160"></div>
+              <div><label>สูงต่อช่อง px</label><input id="cellH" type="number" min="10" value="160"></div>
+            </div>
+            <button id="buildBtn">สร้าง / รีเซ็ตตาราง</button>
+            <div id="gridInfo" class="status"></div>
+          </div>
+
+          <div class="card">
+            <h2>โหมดภาพ</h2>
+            <label>โหมด</label>
+            <select id="mode">
+              <option value="combine">Combine Mode - รวมภาพหลายช่อง</option>
+              <option value="split">Split Mode - แยกภาพเดียว</option>
+            </select>
+            <div id="combineBox">
+              <label>รูปสำหรับช่องที่เลือก</label>
+              <input id="cellUpload" type="file" accept="image/*">
+              <button id="fillSelectedBtn" class="secondary">ใส่รูปลงพื้นที่ที่เลือก</button>
+            </div>
+            <div id="splitBox" style="display:none;">
+              <label>รูปเดียวสำหรับแยกตามตาราง</label>
+              <input id="splitUpload" type="file" accept="image/*">
+              <button id="splitBtn" class="secondary">แยกภาพเข้าช่องทั้งหมด</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-page="layer">
+          <div class="card">
+            <h2>การเลือกพื้นที่</h2>
+            <label>ระบบเลือกพื้นที่</label>
+            <select id="selectionEnabled">
+              <option value="on">เปิดการเลือก</option>
+              <option value="off">ปิดการเลือก / เลื่อนดู</option>
+            </select>
+            <label>วิธีเลือก</label>
+            <select id="selectMode">
+              <option value="click">แตะ / คลิก</option>
+              <option value="drag">ลากครอบ</option>
+            </select>
+            <label>ระดับการเลือก</label>
+            <select id="selectLevel">
+              <option value="major">ช่องใหญ่</option>
+              <option value="minor">ช่องย่อย</option>
+            </select>
+            <button id="clearSelectionBtn" class="secondary">ล้างการเลือก</button>
+            <button id="deleteSelectedBtn" class="danger">ลบเฉพาะส่วนที่เลือก</button>
+            <p class="hint">ปุ่มลอยรูปนิ้ว ใช้สลับเปิด/ปิดการเลือกได้เร็วบนมือถือ</p>
+          </div>
+        </section>
+
+        <section class="page" data-page="grid">
+          <div class="card">
+            <h2>ตารางซ้อน</h2>
+            <label>โหมดตาราง</label>
+            <select id="gridGlobalMode">
+              <option value="custom">เลือกเปิด/ปิดเอง</option>
+              <option value="all">เปิดทั้งหมด</option>
+              <option value="none">ปิดทั้งหมด</option>
+            </select>
+            <label>ตารางหลัก</label>
+            <select id="showMajorGrid">
+              <option value="yes">เปิด</option>
+              <option value="no">ปิด</option>
+            </select>
+            <div class="row">
+              <div><label>ชื่อตารางหลัก</label><input id="majorGridName" type="text" value="ตารางหลัก"></div>
+              <div><label>สีตารางหลัก</label><input id="majorColor" type="color" value="#111111"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>ตารางย่อย</h2>
+            <div id="minorGridList"></div>
+            <button id="addMinorGridBtn" class="secondary">+ เพิ่มตารางย่อย</button>
+          </div>
+        </section>
+
+        <section class="page" data-page="export">
+          <div class="card">
+            <h2>ส่งออก</h2>
+            <label>Zoom</label>
+            <input id="zoom" type="range" min="10" max="200" value="80">
+            <div id="zoomText" class="status">80%</div>
+            <label>ตอนดาวน์โหลดให้ติดตารางไหม</label>
+            <select id="exportGridMode">
+              <option value="with">ติดตาราง</option>
+              <option value="without">ไม่ติดตาราง</option>
+            </select>
+            <button id="downloadAllBtn" class="good">ดาวน์โหลดภาพรวม PNG</button>
+            <button id="downloadSelectedBtn" class="secondary">ดาวน์โหลดเฉพาะส่วนที่เลือก</button>
+          </div>
+        </section>
+
+        <section class="page" data-page="share">
+          <div class="card">
+            <h2>โปรเจกต์ / ห้อง</h2>
+            <div id="projectStatus" class="status">ยังไม่ได้เชื่อมห้อง</div>
+            <button id="saveProjectBtn" class="good">เซฟโปรเจกต์ในเครื่อง</button>
+            <button id="copyProjectBtn" class="secondary">คัดลอกโปรเจกต์เป็นข้อความ</button>
+            <button id="backHomeBtn" class="secondary">กลับหน้าแรก</button>
+          </div>
+          <div class="card">
+            <h2>แชร์ด้วยลิงก์</h2>
+            <button id="copyShareLinkBtn" class="secondary">คัดลอกลิงก์โปรเจกต์</button>
+            <p class="hint">ลิงก์ใช้จริงเมื่อเว็บถูกโฮสต์ออนไลน์และต่อฐานข้อมูลกลาง</p>
+          </div>
+          <div class="card">
+            <h2>แชร์ด้วย Code</h2>
+            <label>อายุ Code</label>
+            <select id="codeExpireMode">
+              <option value="forever">ถาวร</option>
+              <option value="10m">10 นาที</option>
+              <option value="1h">1 ชั่วโมง</option>
+              <option value="24h">24 ชั่วโมง</option>
+            </select>
+            <button id="generateCodeBtn">สร้าง / รีโค้ดใหม่</button>
+            <button id="toggleCodeBtn" class="secondary">เปิด / ปิด Code</button>
+            <div id="shareCodeBox" class="status">ยังไม่มี Code</div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+      // ใส่ Firebase Config ตรงนี้ถ้าต้องการ Real-time จริง
+    };
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const wrap = document.getElementById('canvasWrap');
+    const sheet = document.getElementById('sheet');
+    const backdrop = document.getElementById('sheetBackdrop');
+
+    const $ = id => document.getElementById(id);
+    const els = {
+      homeScreen: $('homeScreen'), appMain: $('appMain'), projectNameInput: $('projectNameInput'), createProjectBtn: $('createProjectBtn'), joinCodeInput: $('joinCodeInput'), joinProjectBtn: $('joinProjectBtn'), loadLocalProjectBtn: $('loadLocalProjectBtn'),
+      statusText: $('statusText'), openMenuBtn: $('openMenuBtn'), closeSheetBtn: $('closeSheetBtn'),
+      selectToggleBtn: $('selectToggleBtn'), zoomInBtn: $('zoomInBtn'), zoomOutBtn: $('zoomOutBtn'),
+      cols: $('cols'), rows: $('rows'), cellW: $('cellW'), cellH: $('cellH'), buildBtn: $('buildBtn'), gridInfo: $('gridInfo'),
+      mode: $('mode'), combineBox: $('combineBox'), splitBox: $('splitBox'), cellUpload: $('cellUpload'), fillSelectedBtn: $('fillSelectedBtn'), splitUpload: $('splitUpload'), splitBtn: $('splitBtn'),
+      selectionEnabled: $('selectionEnabled'), selectMode: $('selectMode'), selectLevel: $('selectLevel'), clearSelectionBtn: $('clearSelectionBtn'), deleteSelectedBtn: $('deleteSelectedBtn'),
+      gridGlobalMode: $('gridGlobalMode'), showMajorGrid: $('showMajorGrid'), majorGridName: $('majorGridName'), majorColor: $('majorColor'), minorGridList: $('minorGridList'), addMinorGridBtn: $('addMinorGridBtn'),
+      zoom: $('zoom'), zoomText: $('zoomText'), exportGridMode: $('exportGridMode'), downloadAllBtn: $('downloadAllBtn'), downloadSelectedBtn: $('downloadSelectedBtn'), projectStatus: $('projectStatus'), saveProjectBtn: $('saveProjectBtn'), copyProjectBtn: $('copyProjectBtn'), backHomeBtn: $('backHomeBtn'), copyShareLinkBtn: $('copyShareLinkBtn'), codeExpireMode: $('codeExpireMode'), generateCodeBtn: $('generateCodeBtn'), toggleCodeBtn: $('toggleCodeBtn'), shareCodeBox: $('shareCodeBox')
+    };
+
+    let currentProject = {
+      id: null,
+      name: 'Untitled Project',
+      owner: true,
+      shareCode: null,
+      codeEnabled: false,
+      codeExpiresAt: null,
+      realtimeEnabled: false
+    };
+
+    let state = {
+      cols: 4, rows: 4, cellW: 160, cellH: 160,
+      cells: [], selected: new Set(), dragStart: null,
+      minorGrids: [{ id: makeId(), name: 'ตารางย่อย 1', enabled: true, color: '#ff3333', spacing: 10, unit: 'px', subdiv: 2 }]
+    };
+
+    function makeId(){ return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())); }
+    function clampInt(v,min,max){ v=parseInt(v,10); if(Number.isNaN(v)) v=min; return Math.max(min,Math.min(max,v)); }
+    function pxFromUnit(v,u){ v=Number(v)||1; if(u==='mm') return v*3.7795275591; if(u==='cm') return v*37.795275591; return v; }
+    function keyOf(c,r,sc=0,sr=0){ return `${c},${r},${sc},${sr}`; }
+    function parseKey(k){ const [col,row,subCol,subRow]=k.split(',').map(Number); return {col,row,subCol,subRow}; }
+    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x])); }
+
+    function showApp(){ els.homeScreen.classList.add('hidden'); els.appMain.classList.remove('hidden'); updateProjectStatus(); }
+    function showHome(){ els.appMain.classList.add('hidden'); els.homeScreen.classList.remove('hidden'); }
+    function createProject(name){
+      currentProject = { id:'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8), name:name||'Untitled Project', owner:true, shareCode:null, codeEnabled:false, codeExpiresAt:null, realtimeEnabled:false };
+      buildGrid(); saveProjectLocal(); showApp(); openSheet('setup');
+    }
+    function getProjectData(){ return { project: currentProject, grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids }, images: state.cells.map(row=>row.map(img=>img?img.src:null)), updatedAt:Date.now() }; }
+    async function loadProjectData(data){
+      if(!data) return;
+      currentProject = data.project || currentProject;
+      state.cols=data.grid?.cols||4; state.rows=data.grid?.rows||4; state.cellW=data.grid?.cellW||160; state.cellH=data.grid?.cellH||160; state.minorGrids=data.grid?.minorGrids||state.minorGrids;
+      els.cols.value=state.cols; els.rows.value=state.rows; els.cellW.value=state.cellW; els.cellH.value=state.cellH;
+      canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
+      state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
+      const images=data.images||[];
+      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){ const src=images[r]?.[c]; if(src){ const img=new Image(); img.src=src; await new Promise(res=>img.onload=res); state.cells[r][c]=img; } }
+      renderMinorGridList(); updateInfo(); updateProjectStatus(); render();
+    }
+    function saveProjectLocal(){ localStorage.setItem('imageGridProject:last', JSON.stringify(getProjectData())); updateProjectStatus(); }
+    function loadProjectLocal(){ const raw=localStorage.getItem('imageGridProject:last'); if(!raw) return alert('ยังไม่มีโปรเจกต์ที่เซฟไว้ในเครื่อง'); loadProjectData(JSON.parse(raw)); showApp(); openSheet('setup'); }
+    function makeShareCode(){ return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(); }
+    function getExpireTime(mode){ if(mode==='forever') return null; if(mode==='10m') return Date.now()+10*60*1000; if(mode==='1h') return Date.now()+60*60*1000; if(mode==='24h') return Date.now()+24*60*60*1000; return null; }
+    function generateCode(){ currentProject.shareCode=makeShareCode(); currentProject.codeEnabled=true; currentProject.codeExpiresAt=getExpireTime(els.codeExpireMode.value); saveProjectLocal(); updateProjectStatus(); }
+    function updateProjectStatus(){
+      if(!els.projectStatus) return;
+      const expireText=currentProject.codeExpiresAt?new Date(currentProject.codeExpiresAt).toLocaleString():'ถาวร';
+      els.projectStatus.innerHTML=`ชื่อ: ${currentProject.name}<br>ID: ${currentProject.id||'-'}<br>Real-time: ${currentProject.realtimeEnabled?'เปิด':'ยังไม่ได้ต่อ Firebase'}`;
+      els.shareCodeBox.innerHTML=currentProject.shareCode?`Code: <b>${currentProject.shareCode}</b><br>สถานะ: ${currentProject.codeEnabled?'เปิด':'ปิด'}<br>หมดอายุ: ${expireText}`:'ยังไม่มี Code';
+    }
+    function copyText(text){ navigator.clipboard?.writeText(text).then(()=>alert('คัดลอกแล้ว')).catch(()=>prompt('คัดลอกข้อความนี้', text)); }
+
+    function openSheet(tab='setup') { sheet.classList.add('open'); backdrop.classList.add('show'); setTab(tab); }
+    function closeSheet() { sheet.classList.remove('open'); backdrop.classList.remove('show'); }
+    function setTab(tab) {
+      document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+      document.querySelectorAll('[data-open-tab]').forEach(b=>b.classList.toggle('active', b.dataset.openTab===tab));
+      document.querySelectorAll('[data-page]').forEach(p=>p.classList.toggle('active', p.dataset.page===tab));
+    }
+
+    function buildGrid(){
+      state.cols=clampInt(els.cols.value,1,100); state.rows=clampInt(els.rows.value,1,100);
+      state.cellW=clampInt(els.cellW.value,10,3000); state.cellH=clampInt(els.cellH.value,10,3000);
+      canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
+      state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
+      state.selected.clear(); updateInfo(); render();
+    }
+    function updateInfo(){
+      const text = `${state.cols}×${state.rows} | ${canvas.width}×${canvas.height}px`;
+      els.statusText.textContent = text;
+      els.gridInfo.innerHTML = `ตาราง: ${state.cols} × ${state.rows}<br>จำนวนช่อง: ${state.cols*state.rows}<br>ขนาดภาพรวม: ${canvas.width} × ${canvas.height}px`;
+    }
+
+    function render(options = {}){
+      const showSelection = options.showSelection ?? true;
+      const showGrid = options.showGrid ?? true;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) if(state.cells[r][c]) drawCover(ctx,state.cells[r][c],c*state.cellW,r*state.cellH,state.cellW,state.cellH);
+      if(showSelection && els.selectionEnabled.value==='on') drawSelection();
+      if(showGrid) drawGridOverlay();
+    }
+    function drawCover(target,img,x,y,w,h){
+      const scale=Math.max(w/img.width,h/img.height), sw=w/scale, sh=h/scale, sx=(img.width-sw)/2, sy=(img.height-sh)/2;
+      target.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+    }
+    function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+    function drawGridOverlay(){
+      const mode=els.gridGlobalMode.value; if(mode==='none') return;
+      ctx.save(); ctx.lineWidth=1;
+      for(const g of state.minorGrids){
+        if(!(mode==='all'||g.enabled)) continue;
+        const spacing=pxFromUnit(g.spacing,g.unit); const subdiv=clampInt(g.subdiv,1,50);
+        ctx.strokeStyle=g.color; ctx.globalAlpha=.5;
+        for(let x=spacing;x<canvas.width;x+=spacing) line(x,0,x,canvas.height);
+        for(let y=spacing;y<canvas.height;y+=spacing) line(0,y,canvas.width,y);
+        ctx.globalAlpha=.8;
+        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) for(let i=1;i<subdiv;i++){
+          const x=c*state.cellW+(state.cellW/subdiv)*i, y=r*state.cellH+(state.cellH/subdiv)*i;
+          line(x,r*state.cellH,x,(r+1)*state.cellH); line(c*state.cellW,y,(c+1)*state.cellW,y);
+        }
+      }
+      if(mode==='all'||els.showMajorGrid.value==='yes'){
+        ctx.globalAlpha=1; ctx.lineWidth=2; ctx.strokeStyle=els.majorColor.value;
+        for(let c=0;c<=state.cols;c++) line(c*state.cellW,0,c*state.cellW,canvas.height);
+        for(let r=0;r<=state.rows;r++) line(0,r*state.cellH,canvas.width,r*state.cellH);
+      }
+      ctx.restore();
+    }
+    function activeSubdiv(){ const g=state.minorGrids.find(x=>x.enabled)||state.minorGrids[0]; return g?clampInt(g.subdiv,1,50):1; }
+    function rectFromKey(k){ const p=parseKey(k), subdiv=els.selectLevel.value==='minor'?activeSubdiv():1, w=state.cellW/subdiv, h=state.cellH/subdiv; return {x:p.col*state.cellW+p.subCol*w,y:p.row*state.cellH+p.subRow*h,w,h,col:p.col,row:p.row}; }
+    function drawSelection(){
+      ctx.save(); ctx.fillStyle='rgba(45,100,255,.25)'; ctx.strokeStyle='rgba(45,100,255,.95)'; ctx.lineWidth=3;
+      for(const k of state.selected){ const r=rectFromKey(k); ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeRect(r.x+1.5,r.y+1.5,r.w-3,r.h-3); }
+      ctx.restore();
+    }
+    function pointerPos(e){ const rect=canvas.getBoundingClientRect(); return {x:(e.clientX-rect.left)*(canvas.width/rect.width), y:(e.clientY-rect.top)*(canvas.height/rect.height)}; }
+    function keyFromPos(x,y){
+      const col=Math.floor(x/state.cellW), row=Math.floor(y/state.cellH); if(col<0||row<0||col>=state.cols||row>=state.rows) return null;
+      if(els.selectLevel.value==='major') return keyOf(col,row);
+      const subdiv=activeSubdiv(), sc=Math.floor((x-col*state.cellW)/(state.cellW/subdiv)), sr=Math.floor((y-row*state.cellH)/(state.cellH/subdiv));
+      return keyOf(col,row,sc,sr);
+    }
+    function selectRange(aKey,bKey){
+      if(!aKey||!bKey) return; const a=parseKey(aKey), b=parseKey(bKey); state.selected.clear();
+      const cMin=Math.min(a.col,b.col), cMax=Math.max(a.col,b.col), rMin=Math.min(a.row,b.row), rMax=Math.max(a.row,b.row);
+      if(els.selectLevel.value==='major') for(let r=rMin;r<=rMax;r++) for(let c=cMin;c<=cMax;c++) state.selected.add(keyOf(c,r));
+      else { const s=activeSubdiv(); for(let r=rMin;r<=rMax;r++) for(let c=cMin;c<=cMax;c++) for(let sr=0;sr<s;sr++) for(let sc=0;sc<s;sc++) state.selected.add(keyOf(c,r,sc,sr)); }
+      render();
+    }
+
+    function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
+    function markProjectChanged(){ saveProjectLocal(); }
+
+    async function fillSelected(){
+      const file=els.cellUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
+      const img=await loadImage(file); for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; } render(); markProjectChanged();
+    }
+    async function splitImage(){
+      const file=els.splitUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); const img=await loadImage(file);
+      const pw=img.width/state.cols, ph=img.height/state.rows;
+      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
+        const off=document.createElement('canvas'); off.width=state.cellW; off.height=state.cellH;
+        const o=off.getContext('2d'); o.drawImage(img,c*pw,r*ph,pw,ph,0,0,state.cellW,state.cellH);
+        const piece=new Image(); piece.src=off.toDataURL('image/png'); await new Promise(done=>piece.onload=done); state.cells[r][c]=piece;
+      } render(); markProjectChanged();
+    }
+    function deleteSelected(){ for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=null; } state.selected.clear(); render(); }
+    function download(data,name){ const a=document.createElement('a'); a.href=data; a.download=name; a.click(); }
+    function downloadAll(){
+      const oldImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const includeGrid = els.exportGridMode.value === 'with';
+      render({ showSelection:false, showGrid:includeGrid });
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        download(url,'image-grid-builder.png');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        ctx.putImageData(oldImage,0,0);
+        render();
+      }, 'image/png');
+    }
+    function downloadSelected(){
+      if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
+      const oldImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const includeGrid = els.exportGridMode.value === 'with';
+      render({ showSelection:false, showGrid:includeGrid });
+      const rs=[...state.selected].map(rectFromKey), minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.h));
+      const off=document.createElement('canvas'); off.width=maxX-minX; off.height=maxY-minY; off.getContext('2d').drawImage(canvas,minX,minY,off.width,off.height,0,0,off.width,off.height);
+      off.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        download(url,'selected-grid-area.png');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        ctx.putImageData(oldImage,0,0);
+        render();
+      }, 'image/png');
+    }
+    function setZoom(v){ els.zoom.value=Math.max(10,Math.min(200,v)); const z=Number(els.zoom.value)/100; wrap.style.transform=`scale(${z})`; els.zoomText.textContent=`${els.zoom.value}%`; }
+    function syncSelectBtn(){ const on=els.selectionEnabled.value==='on'; els.selectToggleBtn.textContent=on?'☝':'✋'; els.selectToggleBtn.style.background=on?'#2d64ff':'#252936'; }
+
+    function renderMinorGridList(){
+      els.minorGridList.innerHTML='';
+      state.minorGrids.forEach(g=>{
+        const box=document.createElement('div'); box.className='status';
+        box.innerHTML=`
+          <label>เปิด/ปิด ${escapeHtml(g.name)}</label><select data-id="${g.id}" data-field="enabled"><option value="true" ${g.enabled?'selected':''}>เปิด</option><option value="false" ${!g.enabled?'selected':''}>ปิด</option></select>
+          <label>ชื่อ</label><input data-id="${g.id}" data-field="name" type="text" value="${escapeHtml(g.name)}">
+          <div class="row"><div><label>สี</label><input data-id="${g.id}" data-field="color" type="color" value="${g.color}"></div><div><label>ช่องย่อย</label><input data-id="${g.id}" data-field="subdiv" type="number" min="1" max="50" value="${g.subdiv}"></div></div>
+          <div class="row"><div><label>ความห่าง</label><input data-id="${g.id}" data-field="spacing" type="number" min="1" value="${g.spacing}"></div><div><label>หน่วย</label><select data-id="${g.id}" data-field="unit"><option value="px" ${g.unit==='px'?'selected':''}>px</option><option value="mm" ${g.unit==='mm'?'selected':''}>mm</option><option value="cm" ${g.unit==='cm'?'selected':''}>cm</option></select></div></div>
+          <button class="danger" data-remove="${g.id}" ${state.minorGrids.length<=1?'disabled':''}>ลบ</button>`;
+        els.minorGridList.appendChild(box);
+      });
+      els.minorGridList.querySelectorAll('[data-field]').forEach(i=>i.addEventListener('change', updateMinor));
+      els.minorGridList.querySelectorAll('[data-field]').forEach(i=>i.addEventListener('input', updateMinor));
+      els.minorGridList.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{ state.minorGrids=state.minorGrids.filter(g=>g.id!==b.dataset.remove); renderMinorGridList(); render(); }));
+    }
+    function updateMinor(e){ const g=state.minorGrids.find(x=>x.id===e.target.dataset.id); if(!g)return; const f=e.target.dataset.field; if(f==='enabled')g.enabled=e.target.value==='true'; else if(f==='spacing')g.spacing=clampInt(e.target.value,1,100000); else if(f==='subdiv')g.subdiv=clampInt(e.target.value,1,50); else g[f]=e.target.value; render(); }
+
+    els.createProjectBtn.addEventListener('click',()=>createProject(els.projectNameInput.value.trim()));
+    els.loadLocalProjectBtn.addEventListener('click',loadProjectLocal);
+    els.joinProjectBtn.addEventListener('click',()=>{
+      const code=els.joinCodeInput.value.trim().toUpperCase();
+      const raw=localStorage.getItem('imageGridProject:last');
+      if(!raw) return alert('เวอร์ชัน Local ยังเข้าห้องคนอื่นจริงไม่ได้ ต้องต่อ Firebase ก่อน');
+      const data=JSON.parse(raw);
+      if(data.project?.shareCode!==code || !data.project?.codeEnabled) return alert('ไม่พบ Code หรือ Code ถูกปิด');
+      if(data.project?.codeExpiresAt && Date.now()>data.project.codeExpiresAt) return alert('Code หมดอายุแล้ว');
+      loadProjectData(data); showApp(); openSheet('setup');
+    });
+    els.saveProjectBtn.addEventListener('click',()=>{ saveProjectLocal(); alert('เซฟแล้ว'); });
+    els.copyProjectBtn.addEventListener('click',()=>copyText(JSON.stringify(getProjectData())));
+    els.backHomeBtn.addEventListener('click',showHome);
+    els.copyShareLinkBtn.addEventListener('click',()=>copyText(location.href.split('#')[0]+'#project='+currentProject.id));
+    els.generateCodeBtn.addEventListener('click',generateCode);
+    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectLocal(); updateProjectStatus(); });
+
+    document.querySelectorAll('[data-open-tab]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.openTab)));
+    document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+    els.openMenuBtn.addEventListener('click',()=>openSheet('setup'));
+    els.closeSheetBtn.addEventListener('click',closeSheet);
+    backdrop.addEventListener('click',closeSheet);
+    els.buildBtn.addEventListener('click',buildGrid);
+    els.mode.addEventListener('change',()=>{ const s=els.mode.value==='split'; els.combineBox.style.display=s?'none':'block'; els.splitBox.style.display=s?'block':'none'; });
+    els.fillSelectedBtn.addEventListener('click',fillSelected);
+    els.splitBtn.addEventListener('click',splitImage);
+    els.clearSelectionBtn.addEventListener('click',()=>{state.selected.clear();render();});
+    els.deleteSelectedBtn.addEventListener('click',deleteSelected);
+    els.downloadAllBtn.addEventListener('click',downloadAll);
+    els.downloadSelectedBtn.addEventListener('click',downloadSelected);
+    els.zoom.addEventListener('input',()=>setZoom(Number(els.zoom.value)));
+    els.zoomInBtn.addEventListener('click',()=>setZoom(Number(els.zoom.value)+10));
+    els.zoomOutBtn.addEventListener('click',()=>setZoom(Number(els.zoom.value)-10));
+    els.selectToggleBtn.addEventListener('click',()=>{ els.selectionEnabled.value=els.selectionEnabled.value==='on'?'off':'on'; syncSelectBtn(); render(); });
+    els.selectionEnabled.addEventListener('change',()=>{syncSelectBtn();render();});
+    ['gridGlobalMode','showMajorGrid','majorColor','selectLevel'].forEach(id=>els[id].addEventListener('change',render));
+    els.addMinorGridBtn.addEventListener('click',()=>{ const n=state.minorGrids.length+1; state.minorGrids.push({id:makeId(),name:`ตารางย่อย ${n}`,enabled:true,color:'#ff3333',spacing:10,unit:'px',subdiv:2}); renderMinorGridList(); render(); });
+
+    canvas.addEventListener('pointerdown',e=>{
+      if(els.selectionEnabled.value==='off') return;
+      e.preventDefault(); const p=pointerPos(e), k=keyFromPos(p.x,p.y); if(!k)return;
+      if(els.selectMode.value==='click'){ state.selected.has(k)?state.selected.delete(k):state.selected.add(k); render(); }
+      else { state.dragStart=k; selectRange(k,k); }
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(els.selectionEnabled.value==='off'||els.selectMode.value!=='drag'||!state.dragStart) return;
+      e.preventDefault(); const p=pointerPos(e), k=keyFromPos(p.x,p.y); if(k) selectRange(state.dragStart,k);
+    });
+    window.addEventListener('pointerup',()=>state.dragStart=null);
+
+    renderMinorGridList(); buildGrid(); setZoom(80); syncSelectBtn(); showHome();
+  </script>
+</body>
+</html>
