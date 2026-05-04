@@ -230,19 +230,18 @@
   <section id="homeScreen" class="homeScreen">
     <div class="homeCard">
       <h1>Image Grid Builder</h1>
-      <p>ล็อกอินก่อนใช้งาน โปรเจกต์จะเซฟบน Firebase ตามบัญชีผู้ใช้ ไม่ใช้ localStorage</p>
+      <p>ล็อกอินก่อนใช้งาน ใช้ ID/Password ธรรมดา และเซฟโปรเจกต์บน Firebase ตาม ID</p>
 
       <div id="authBox">
-        <h2>Sign in / Register</h2>
-        <label>Email</label>
-        <input id="authEmail" type="email" placeholder="you@example.com">
+        <h2>Login / Register</h2>
+        <label>ID / ชื่อผู้ใช้</label>
+        <input id="authEmail" type="text" placeholder="อย่างน้อย 4 ตัว เช่น rat555">
         <label>Password</label>
         <input id="authPassword" type="password" placeholder="อย่างน้อย 6 ตัว">
         <div class="row">
-          <button id="signInBtn">Sign in</button>
+          <button id="signInBtn">Login</button>
           <button id="registerBtn" class="secondary">Register</button>
         </div>
-        <button id="googleSignInBtn" class="good">Sign in with Google</button>
         <div id="authStatus" class="status">ยังไม่ได้ล็อกอิน</div>
       </div>
 
@@ -280,7 +279,7 @@
         <div id="roomShortcutList" class="shortcutList"></div>
       </div>
 
-      <p class="hint">ต้องเปิด Firebase Authentication: Email/Password และ Google provider ใน Firebase Console ก่อนใช้งานครับ</p>
+      <p class="hint">ระบบนี้ใช้แค่ Realtime Database ไม่ต้องเปิด Firebase Authentication</p>
     </div>
   </section>
 
@@ -457,7 +456,6 @@
   </main>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -471,7 +469,7 @@
     };
 
     let db = null;
-    let auth = null;
+    let auth = null; // ไม่ใช้ Firebase Auth แล้ว
     let currentUser = null;
     let roomRef = null;
     let isApplyingRemote = false;
@@ -491,7 +489,6 @@
         if (typeof firebase === 'undefined') return false;
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.database();
-        auth = firebase.auth();
         return true;
       } catch (err) {
         console.error('Firebase init error:', err);
@@ -511,7 +508,7 @@
 
     const $ = id => document.getElementById(id);
     const els = {
-      homeScreen: $('homeScreen'), appMain: $('appMain'), authBox: $('authBox'), authEmail: $('authEmail'), authPassword: $('authPassword'), signInBtn: $('signInBtn'), registerBtn: $('registerBtn'), googleSignInBtn: $('googleSignInBtn'), signOutBtn: $('signOutBtn'), authStatus: $('authStatus'), userStatus: $('userStatus'), projectHomeBox: $('projectHomeBox'),
+      homeScreen: $('homeScreen'), appMain: $('appMain'), authBox: $('authBox'), authEmail: $('authEmail'), authPassword: $('authPassword'), signInBtn: $('signInBtn'), registerBtn: $('registerBtn'), signOutBtn: $('signOutBtn'), authStatus: $('authStatus'), userStatus: $('userStatus'), projectHomeBox: $('projectHomeBox'),
       projectNameInput: $('projectNameInput'), createProjectBtn: $('createProjectBtn'), joinCodeInput: $('joinCodeInput'), joinProjectBtn: $('joinProjectBtn'), loadCloudProjectBtn: $('loadCloudProjectBtn'), exportProjectFileBtn: $('exportProjectFileBtn'), importProjectFileInput: $('importProjectFileInput'),
       shortcutNameInput: $('shortcutNameInput'), shortcutCodeInput: $('shortcutCodeInput'), addShortcutBtn: $('addShortcutBtn'), refreshShortcutBtn: $('refreshShortcutBtn'), roomShortcutList: $('roomShortcutList'),
       statusText: $('statusText'), openMenuBtn: $('openMenuBtn'), closeSheetBtn: $('closeSheetBtn'),
@@ -666,33 +663,66 @@
     function showApp(){ els.homeScreen.classList.add('hidden'); els.appMain.classList.remove('hidden'); updateProjectStatus(); setTimeout(centerCanvas, 60); }
     function showHome(){ els.appMain.classList.add('hidden'); els.homeScreen.classList.remove('hidden'); renderRoomShortcuts(); }
 
+    function normalizeUserName(name){
+      return String(name || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    }
+
+    function validateLoginInput(){
+      const name = normalizeUserName(els.authEmail.value);
+      const pass = els.authPassword.value || '';
+      if(name.length < 4){
+        alert('ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัว และใช้ได้เฉพาะ a-z, 0-9, _ หรือ -');
+        return null;
+      }
+      if(pass.length < 6){
+        alert('รหัสผ่านต้องมีอย่างน้อย 6 ตัว');
+        return null;
+      }
+      return { name, pass };
+    }
+
+    function hashPassword(name, pass){
+      return simpleHash('grid_builder_v1|' + name + '|' + pass);
+    }
+
     async function signInEmail(){
-      const email = els.authEmail.value.trim();
-      const pass = els.authPassword.value;
-      if(!email || !pass) return alert('กรุณากรอก Email และ Password');
-      try { await auth.signInWithEmailAndPassword(email, pass); }
-      catch(e){ alert('Sign in ไม่สำเร็จ: ' + e.message); }
+      if(!initFirebase()) return alert('Firebase ยังไม่พร้อม');
+      const input = validateLoginInput();
+      if(!input) return;
+
+      try {
+        const snap = await db.ref('simpleUsers/' + input.name).get();
+        const data = snap.val();
+        if(!data) return alert('ไม่พบ ID นี้ ให้กด Register ก่อน');
+        if(data.passHash !== hashPassword(input.name, input.pass)) return alert('รหัสผ่านผิด');
+
+        currentUser = { uid: 'user_' + input.name, email: input.name, name: input.name };
+        onAuthChanged(currentUser);
+      } catch(e){
+        alert('Login ไม่สำเร็จ: ' + e.message);
+      }
     }
 
     async function registerEmail(){
-      const email = els.authEmail.value.trim();
-      const pass = els.authPassword.value;
-      if(!email || !pass) return alert('กรุณากรอก Email และ Password');
-      try { await auth.createUserWithEmailAndPassword(email, pass); }
-      catch(e){ alert('Register ไม่สำเร็จ: ' + e.message); }
-    }
+      if(!initFirebase()) return alert('Firebase ยังไม่พร้อม');
+      const input = validateLoginInput();
+      if(!input) return;
 
-    async function signInGoogle(){
       try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await auth.signInWithPopup(provider);
-      } catch(e) {
-        try {
-          const provider = new firebase.auth.GoogleAuthProvider();
-          await auth.signInWithRedirect(provider);
-        } catch(err) {
-          alert('Google Sign in ไม่สำเร็จ: ' + err.message);
-        }
+        const ref = db.ref('simpleUsers/' + input.name);
+        const snap = await ref.get();
+        if(snap.exists()) return alert('ID นี้มีคนใช้แล้ว');
+
+        await ref.set({
+          name: input.name,
+          passHash: hashPassword(input.name, input.pass),
+          createdAt: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        currentUser = { uid: 'user_' + input.name, email: input.name, name: input.name };
+        onAuthChanged(currentUser);
+      } catch(e){
+        alert('Register ไม่สำเร็จ: ' + e.message);
       }
     }
 
@@ -701,7 +731,7 @@
       if(user){
         els.authBox.classList.add('hidden');
         els.projectHomeBox.classList.remove('hidden');
-        els.userStatus.innerHTML = `ล็อกอินแล้ว<br>Email: ${escapeHtml(user.email || '-')}<br>UID: ${escapeHtml(user.uid)}`;
+        els.userStatus.innerHTML = `ล็อกอินแล้ว<br>ID: ${escapeHtml(user.name || user.email || '-')}<br>UID: ${escapeHtml(user.uid)}`;
         renderRoomShortcuts();
       } else {
         els.authBox.classList.remove('hidden');
@@ -1226,8 +1256,7 @@
 
     els.signInBtn.addEventListener('click', signInEmail);
     els.registerBtn.addEventListener('click', registerEmail);
-    els.googleSignInBtn.addEventListener('click', signInGoogle);
-    els.signOutBtn.addEventListener('click', () => auth.signOut());
+    els.signOutBtn.addEventListener('click', () => { currentUser = null; onAuthChanged(null); });
 
     els.createProjectBtn.addEventListener('click',()=>createProject(els.projectNameInput.value.trim()));
     els.loadCloudProjectBtn.addEventListener('click', loadLatestCloudProject);
@@ -1337,7 +1366,7 @@
     syncSelectBtn();
     showHome();
 
-    auth.onAuthStateChanged(onAuthChanged);
+    onAuthChanged(null);
 
     window.addEventListener('load', async () => {
       const hash = new URLSearchParams(location.hash.replace('#',''));
