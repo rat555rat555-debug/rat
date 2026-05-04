@@ -524,6 +524,9 @@ canvas { display:block; background:#fff; }
     let state = {
       cols: 4, rows: 4, cellW: 160, cellH: 160,
       cells: [], selected: new Set(), dragStart: null,
+      // assets เก็บรูปจริงแค่ครั้งเดียว ส่วน cells จะอ้างอิงด้วย assetId
+      // แก้ปัญหา 10×10 แล้ว Firebase ไม่ส่งรูป เพราะรูปเดิมถูกยัดซ้ำ 100 รอบ
+      assets: {},
       minorGrids: [{ id: makeId(), name: 'ตารางย่อย 1', enabled: true, color: '#ff3333', spacing: 10, unit: 'px', subdiv: 2 }]
     };
 
@@ -533,6 +536,61 @@ canvas { display:block; background:#fff; }
     function keyOf(c,r,sc=0,sr=0){ return `${c},${r},${sc},${sr}`; }
     function parseKey(k){ const [col,row,subCol,subRow]=k.split(',').map(Number); return {col,row,subCol,subRow}; }
     function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[x])); }
+
+    function simpleHash(str){
+      let h = 2166136261;
+      for(let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(36);
+    }
+
+    function makeImageFromSrc(src){
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    function canvasToDataURL(canvas, quality = 0.72){
+      // JPEG เล็กกว่า PNG มาก เหมาะกับ Firebase Realtime Database
+      // ถ้าต้องการพื้นหลังโปร่งใสจริง ควรใช้ Firebase Storage แทน
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
+    async function registerAssetFromDataURL(dataUrl){
+      const id = 'img_' + simpleHash(dataUrl) + '_' + dataUrl.length;
+      if(!state.assets) state.assets = {};
+      state.assets[id] = dataUrl;
+      const img = await makeImageFromSrc(dataUrl);
+      if(img) img.assetId = id;
+      return img;
+    }
+
+    async function loadImageCompressed(file, maxSide = 900, quality = 0.72){
+      const raw = await new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = rej;
+        img.src = URL.createObjectURL(file);
+      });
+
+      const scale = Math.min(1, maxSide / Math.max(raw.width, raw.height));
+      const w = Math.max(1, Math.round(raw.width * scale));
+      const h = Math.max(1, Math.round(raw.height * scale));
+      const off = document.createElement('canvas');
+      off.width = w;
+      off.height = h;
+      const o = off.getContext('2d');
+      o.fillStyle = '#fff';
+      o.fillRect(0,0,w,h);
+      o.drawImage(raw,0,0,w,h);
+      return registerAssetFromDataURL(canvasToDataURL(off, quality));
+    }
+
 
     function isViewMode(){ return els.selectionEnabled.value === 'off'; }
 
@@ -639,24 +697,66 @@ canvas { display:block; background:#fff; }
       openSheet('setup');
     }
 
-    function getProjectData(){ return { project: currentProject, grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids }, images: state.cells.map(row=>row.map(img=>img?img.src:null)), updatedAt:Date.now(), status: roomStatus }; }
+    function getProjectData(){
+      const assets = {};
+      const images = state.cells.map(row => row.map(img => {
+        if(!img) return null;
+        const id = img.assetId || ('img_' + simpleHash(img.src) + '_' + img.src.length);
+        img.assetId = id;
+        assets[id] = state.assets?.[id] || img.src;
+        return id;
+      }));
+      return {
+        project: currentProject,
+        grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids },
+        assets,
+        images,
+        updatedAt:Date.now(),
+        status: roomStatus
+      };
+    }
 
     async function loadProjectData(data){
       if(!data) return;
       currentProject = data.project || currentProject;
       roomStatus = data.status || roomStatus || { online:false, hostLastSeen:null };
       state.cols=data.grid?.cols||4; state.rows=data.grid?.rows||4; state.cellW=data.grid?.cellW||160; state.cellH=data.grid?.cellH||160; state.minorGrids=data.grid?.minorGrids||state.minorGrids;
+      state.assets = data.assets || {};
       els.cols.value=state.cols; els.rows.value=state.rows; els.cellW.value=state.cellW; els.cellH.value=state.cellH;
       canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
       state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
+
       const images=data.images||[];
-      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
-        const src=images[r]?.[c];
-        if(src){
-          const img=new Image();
-          img.src=src;
-          await new Promise(res=>{ img.onload=res; img.onerror=res; });
-          state.cells[r][c]=img;
+      const loadedAssets = {};
+
+      // โหมดใหม่: images เก็บแค่ id แล้วไปดึงรูปจาก assets ทำให้รูปไม่ถูกส่งซ้ำ 100 ช่อง
+      if(data.assets){
+        const ids = new Set();
+        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) if(images[r]?.[c]) ids.add(images[r][c]);
+        for(const id of ids){
+          const src = data.assets[id];
+          if(src){
+            const img = await makeImageFromSrc(src);
+            if(img){ img.assetId = id; loadedAssets[id] = img; }
+          }
+        }
+        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
+          const id=images[r]?.[c];
+          if(id && loadedAssets[id]) state.cells[r][c]=loadedAssets[id];
+        }
+      } else {
+        // รองรับเซฟเก่า: images เป็น dataURL ตรง ๆ
+        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
+          const src=images[r]?.[c];
+          if(src){
+            const img=await makeImageFromSrc(src);
+            if(img){
+              const id='img_'+simpleHash(src)+'_'+src.length;
+              img.assetId=id;
+              state.assets[id]=src;
+              state.cells[r][c]=img;
+            }
+          }
         }
       }
       renderMinorGridList(); updateInfo(); updateProjectStatus(); render(); setTimeout(centerCanvas, 60);
@@ -863,6 +963,7 @@ canvas { display:block; background:#fff; }
       state.cellW=clampInt(els.cellW.value,10,3000); state.cellH=clampInt(els.cellH.value,10,3000);
       canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
       state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
+      state.assets = {};
       state.selected.clear(); updateInfo(); render(); setTimeout(centerCanvas, 60);
     }
 
@@ -937,12 +1038,12 @@ canvas { display:block; background:#fff; }
       render();
     }
 
-    function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
+    function loadImage(file){ return loadImageCompressed(file, 900, 0.72); }
     function markProjectChanged(){ saveProjectLocal(); queueCloudSave(); }
 
     async function fillSelected(){
       const file=els.cellUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
-      const img=await loadImage(file); for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; } render(); markProjectChanged();
+      const img=await loadImage(file); if(!img) return alert('อ่านรูปไม่สำเร็จ'); for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; } render(); markProjectChanged();
     }
 
     async function splitImage(){
@@ -951,7 +1052,7 @@ canvas { display:block; background:#fff; }
       for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
         const off=document.createElement('canvas'); off.width=state.cellW; off.height=state.cellH;
         const o=off.getContext('2d'); o.drawImage(img,c*pw,r*ph,pw,ph,0,0,state.cellW,state.cellH);
-        const piece=new Image(); piece.src=off.toDataURL('image/png'); await new Promise(done=>piece.onload=done); state.cells[r][c]=piece;
+        const piece = await registerAssetFromDataURL(canvasToDataURL(off, 0.72)); if(piece) state.cells[r][c]=piece;
       } render(); markProjectChanged();
     }
 
