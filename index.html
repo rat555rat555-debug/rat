@@ -244,7 +244,7 @@
 
       <div class="homeLine"></div>
       <button id="loadLocalProjectBtn" class="secondary">โหลดโปรเจกต์ที่เซฟในเครื่อง</button>
-      <p class="hint">Real-time ต้องต่อ Firebase Config ก่อน เวอร์ชันนี้วางระบบห้องและเซฟโปรเจกต์ให้แล้ว</p>
+      <p class="hint">Real-time พร้อมใช้ผ่าน Firebase แล้ว ถ้า Join ไม่ได้ให้เช็ก Rules ของ Realtime Database</p>
     </div>
   </section>
 
@@ -419,10 +419,42 @@
     </aside>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
   <script>
     const firebaseConfig = {
-      // ใส่ Firebase Config ตรงนี้ถ้าต้องการ Real-time จริง
+      apiKey: "AIzaSyBH9clABBaRxRB-h_2lP2MvO6qO34nO-Jw",
+      authDomain: "ratweb-26cd0.firebaseapp.com",
+      databaseURL: "https://ratweb-26cd0-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ratweb-26cd0",
+      storageBucket: "ratweb-26cd0.firebasestorage.app",
+      messagingSenderId: "844340966721",
+      appId: "1:844340966721:web:de52603ef70abf4f1bddc0"
     };
+
+    let db = null;
+    let roomRef = null;
+    let isApplyingRemote = false;
+    let saveTimer = null;
+
+    function initFirebase(){
+      try {
+        if (typeof firebase === 'undefined') return false;
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        return true;
+      } catch (err) {
+        console.error('Firebase init error:', err);
+        return false;
+      }
+    }
+
+    function safeCode(code){
+      return String(code || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    }
+
+    initFirebase();
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -469,7 +501,13 @@
     function showHome(){ els.appMain.classList.add('hidden'); els.homeScreen.classList.remove('hidden'); }
     function createProject(name){
       currentProject = { id:'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8), name:name||'Untitled Project', owner:true, shareCode:null, codeEnabled:false, codeExpiresAt:null, realtimeEnabled:false };
-      buildGrid(); saveProjectLocal(); showApp(); openSheet('setup');
+      buildGrid();
+      if(initFirebase()) currentProject.realtimeEnabled = true;
+      saveProjectLocal();
+      saveProjectCloudNow();
+      subscribeProject(currentProject.id);
+      showApp();
+      openSheet('setup');
     }
     function getProjectData(){ return { project: currentProject, grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids }, images: state.cells.map(row=>row.map(img=>img?img.src:null)), updatedAt:Date.now() }; }
     async function loadProjectData(data){
@@ -484,10 +522,58 @@
       renderMinorGridList(); updateInfo(); updateProjectStatus(); render();
     }
     function saveProjectLocal(){ localStorage.setItem('imageGridProject:last', JSON.stringify(getProjectData())); updateProjectStatus(); }
+
+    function saveProjectCloudNow(){
+      if(isApplyingRemote) return;
+      if(!initFirebase() || !currentProject.id) return;
+      currentProject.realtimeEnabled = true;
+      const data = getProjectData();
+      db.ref('rooms/' + currentProject.id).set(data).catch(err => alert('บันทึกขึ้น Firebase ไม่สำเร็จ: ' + err.message));
+      if(currentProject.shareCode){
+        db.ref('codes/' + safeCode(currentProject.shareCode)).set({
+          projectId: currentProject.id,
+          enabled: currentProject.codeEnabled,
+          expiresAt: currentProject.codeExpiresAt || null,
+          updatedAt: Date.now()
+        }).catch(err => alert('บันทึก Code ไม่สำเร็จ: ' + err.message));
+      }
+      updateProjectStatus();
+    }
+
+    function queueCloudSave(){
+      if(isApplyingRemote) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveProjectCloudNow, 500);
+    }
+
+    function subscribeProject(projectId){
+      if(!initFirebase() || !projectId) return;
+      if(roomRef) roomRef.off();
+      roomRef = db.ref('rooms/' + projectId);
+      roomRef.on('value', async snap => {
+        const data = snap.val();
+        if(!data || isApplyingRemote) return;
+        isApplyingRemote = true;
+        await loadProjectData(data);
+        currentProject.id = projectId;
+        currentProject.realtimeEnabled = true;
+        isApplyingRemote = false;
+      }, err => alert('อ่านห้องจาก Firebase ไม่สำเร็จ: ' + err.message));
+    }
     function loadProjectLocal(){ const raw=localStorage.getItem('imageGridProject:last'); if(!raw) return alert('ยังไม่มีโปรเจกต์ที่เซฟไว้ในเครื่อง'); loadProjectData(JSON.parse(raw)); showApp(); openSheet('setup'); }
     function makeShareCode(){ return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(); }
     function getExpireTime(mode){ if(mode==='forever') return null; if(mode==='10m') return Date.now()+10*60*1000; if(mode==='1h') return Date.now()+60*60*1000; if(mode==='24h') return Date.now()+24*60*60*1000; return null; }
-    function generateCode(){ currentProject.shareCode=makeShareCode(); currentProject.codeEnabled=true; currentProject.codeExpiresAt=getExpireTime(els.codeExpireMode.value); saveProjectLocal(); updateProjectStatus(); }
+    function generateCode(){
+      if(!currentProject.id) return alert('กรุณาสร้างโปรเจกต์ก่อน');
+      currentProject.shareCode=makeShareCode();
+      currentProject.codeEnabled=true;
+      currentProject.codeExpiresAt=getExpireTime(els.codeExpireMode.value);
+      if(initFirebase()) currentProject.realtimeEnabled = true;
+      saveProjectLocal();
+      saveProjectCloudNow();
+      subscribeProject(currentProject.id);
+      updateProjectStatus();
+    }
     function updateProjectStatus(){
       if(!els.projectStatus) return;
       const expireText=currentProject.codeExpiresAt?new Date(currentProject.codeExpiresAt).toLocaleString():'ถาวร';
@@ -576,7 +662,7 @@
     }
 
     function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
-    function markProjectChanged(){ saveProjectLocal(); }
+    function markProjectChanged(){ saveProjectLocal(); queueCloudSave(); }
 
     async function fillSelected(){
       const file=els.cellUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
@@ -591,7 +677,7 @@
         const piece=new Image(); piece.src=off.toDataURL('image/png'); await new Promise(done=>piece.onload=done); state.cells[r][c]=piece;
       } render(); markProjectChanged();
     }
-    function deleteSelected(){ for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=null; } state.selected.clear(); render(); }
+    function deleteSelected(){ for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=null; } state.selected.clear(); render(); markProjectChanged(); }
     function download(data,name){ const a=document.createElement('a'); a.href=data; a.download=name; a.click(); }
     function downloadAll(){
       const oldImage = ctx.getImageData(0,0,canvas.width,canvas.height);
@@ -637,34 +723,48 @@
       });
       els.minorGridList.querySelectorAll('[data-field]').forEach(i=>i.addEventListener('change', updateMinor));
       els.minorGridList.querySelectorAll('[data-field]').forEach(i=>i.addEventListener('input', updateMinor));
-      els.minorGridList.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{ state.minorGrids=state.minorGrids.filter(g=>g.id!==b.dataset.remove); renderMinorGridList(); render(); }));
+      els.minorGridList.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{ state.minorGrids=state.minorGrids.filter(g=>g.id!==b.dataset.remove); renderMinorGridList(); render(); markProjectChanged(); }));
     }
-    function updateMinor(e){ const g=state.minorGrids.find(x=>x.id===e.target.dataset.id); if(!g)return; const f=e.target.dataset.field; if(f==='enabled')g.enabled=e.target.value==='true'; else if(f==='spacing')g.spacing=clampInt(e.target.value,1,100000); else if(f==='subdiv')g.subdiv=clampInt(e.target.value,1,50); else g[f]=e.target.value; render(); }
+    function updateMinor(e){ const g=state.minorGrids.find(x=>x.id===e.target.dataset.id); if(!g)return; const f=e.target.dataset.field; if(f==='enabled')g.enabled=e.target.value==='true'; else if(f==='spacing')g.spacing=clampInt(e.target.value,1,100000); else if(f==='subdiv')g.subdiv=clampInt(e.target.value,1,50); else g[f]=e.target.value; render(); markProjectChanged(); }
 
     els.createProjectBtn.addEventListener('click',()=>createProject(els.projectNameInput.value.trim()));
     els.loadLocalProjectBtn.addEventListener('click',loadProjectLocal);
-    els.joinProjectBtn.addEventListener('click',()=>{
-      const code=els.joinCodeInput.value.trim().toUpperCase();
-      const raw=localStorage.getItem('imageGridProject:last');
-      if(!raw) return alert('เวอร์ชัน Local ยังเข้าห้องคนอื่นจริงไม่ได้ ต้องต่อ Firebase ก่อน');
-      const data=JSON.parse(raw);
-      if(data.project?.shareCode!==code || !data.project?.codeEnabled) return alert('ไม่พบ Code หรือ Code ถูกปิด');
-      if(data.project?.codeExpiresAt && Date.now()>data.project.codeExpiresAt) return alert('Code หมดอายุแล้ว');
-      loadProjectData(data); showApp(); openSheet('setup');
+    els.joinProjectBtn.addEventListener('click', async ()=>{
+      const code = safeCode(els.joinCodeInput.value);
+      if(!code) return alert('กรุณาใส่ Code ก่อน');
+      if(!initFirebase()) return alert('Firebase ยังไม่พร้อม ให้เช็ก config / Realtime Database / Rules');
+      try {
+        const snap = await db.ref('codes/' + code).get();
+        const codeData = snap.val();
+        if(!codeData || !codeData.enabled) return alert('ไม่พบ Code หรือ Code ถูกปิด');
+        if(codeData.expiresAt && Date.now() > codeData.expiresAt) return alert('Code หมดอายุแล้ว');
+        const roomSnap = await db.ref('rooms/' + codeData.projectId).get();
+        const data = roomSnap.val();
+        if(!data) return alert('ไม่พบโปรเจกต์นี้');
+        await loadProjectData(data);
+        currentProject.id = codeData.projectId;
+        currentProject.owner = false;
+        currentProject.realtimeEnabled = true;
+        subscribeProject(currentProject.id);
+        showApp();
+        openSheet('setup');
+      } catch(err){
+        alert('Join ไม่สำเร็จ: ' + err.message);
+      }
     });
     els.saveProjectBtn.addEventListener('click',()=>{ saveProjectLocal(); alert('เซฟแล้ว'); });
     els.copyProjectBtn.addEventListener('click',()=>copyText(JSON.stringify(getProjectData())));
     els.backHomeBtn.addEventListener('click',showHome);
     els.copyShareLinkBtn.addEventListener('click',()=>copyText(location.href.split('#')[0]+'#project='+currentProject.id));
     els.generateCodeBtn.addEventListener('click',generateCode);
-    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectLocal(); updateProjectStatus(); });
+    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectLocal(); saveProjectCloudNow(); updateProjectStatus(); });
 
     document.querySelectorAll('[data-open-tab]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.openTab)));
     document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
     els.openMenuBtn.addEventListener('click',()=>openSheet('setup'));
     els.closeSheetBtn.addEventListener('click',closeSheet);
     backdrop.addEventListener('click',closeSheet);
-    els.buildBtn.addEventListener('click',buildGrid);
+    els.buildBtn.addEventListener('click',()=>{ buildGrid(); markProjectChanged(); });
     els.mode.addEventListener('change',()=>{ const s=els.mode.value==='split'; els.combineBox.style.display=s?'none':'block'; els.splitBox.style.display=s?'block':'none'; });
     els.fillSelectedBtn.addEventListener('click',fillSelected);
     els.splitBtn.addEventListener('click',splitImage);
@@ -678,7 +778,7 @@
     els.selectToggleBtn.addEventListener('click',()=>{ els.selectionEnabled.value=els.selectionEnabled.value==='on'?'off':'on'; syncSelectBtn(); render(); });
     els.selectionEnabled.addEventListener('change',()=>{syncSelectBtn();render();});
     ['gridGlobalMode','showMajorGrid','majorColor','selectLevel'].forEach(id=>els[id].addEventListener('change',render));
-    els.addMinorGridBtn.addEventListener('click',()=>{ const n=state.minorGrids.length+1; state.minorGrids.push({id:makeId(),name:`ตารางย่อย ${n}`,enabled:true,color:'#ff3333',spacing:10,unit:'px',subdiv:2}); renderMinorGridList(); render(); });
+    els.addMinorGridBtn.addEventListener('click',()=>{ const n=state.minorGrids.length+1; state.minorGrids.push({id:makeId(),name:`ตารางย่อย ${n}`,enabled:true,color:'#ff3333',spacing:10,unit:'px',subdiv:2}); renderMinorGridList(); render(); markProjectChanged(); });
 
     canvas.addEventListener('pointerdown',e=>{
       if(els.selectionEnabled.value==='off') return;
@@ -693,6 +793,28 @@
     window.addEventListener('pointerup',()=>state.dragStart=null);
 
     renderMinorGridList(); buildGrid(); setZoom(80); syncSelectBtn(); showHome();
+
+    window.addEventListener('load', async () => {
+      const hash = new URLSearchParams(location.hash.replace('#',''));
+      const projectId = hash.get('project');
+      if(projectId && initFirebase()){
+        try {
+          const snap = await db.ref('rooms/' + projectId).get();
+          const data = snap.val();
+          if(data){
+            await loadProjectData(data);
+            currentProject.id = projectId;
+            currentProject.owner = false;
+            currentProject.realtimeEnabled = true;
+            subscribeProject(projectId);
+            showApp();
+            openSheet('setup');
+          }
+        } catch(err){
+          alert('เปิดลิงก์โปรเจกต์ไม่สำเร็จ: ' + err.message);
+        }
+      }
+    });
   </script>
 </body>
 </html>
