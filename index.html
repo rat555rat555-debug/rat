@@ -1,12 +1,12 @@
-<!DOCTYPE html>
-<html lang="th">
+<!DOCTYPE html><html lang="th">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Image Grid Builder</title>
+  <title>Image Grid Builder Pro Export</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+    /* FIX: ให้หน้า Login/Home เลื่อนบนมือถือได้ แม้ body ถูกล็อกไว้สำหรับหน้าแก้ไขแผนที่ */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #0c0d12;
@@ -15,16 +15,25 @@
     }
     .hidden { display: none !important; }
     .homeScreen {
-      width: 100%; height: 100%; overflow-y: auto; display: grid; place-items: center; padding: 18px;
+      width: 100%;
+      height: 100%;
+      min-height: 100dvh;
+      display: grid;
+      place-items: start center;
+      padding: 18px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       background: radial-gradient(circle at top, #26304d, #0c0d12 60%);
     }
     .homeCard {
-      width: min(460px, 100%); background: #15171d; border: 1px solid #2a2d36;
+      width: min(440px, 100%); background: #15171d; border: 1px solid #2a2d36;
       border-radius: 24px; padding: 18px; box-shadow: 0 20px 70px rgba(0,0,0,.45);
       animation: fadeIn .22s ease both;
+      margin: 24px 0;
     }
     .homeCard h1 { margin: 0 0 6px; font-size: 24px; }
-    .homeCard h2 { font-size:16px;margin:0 0 8px; }
     .homeCard p { margin: 0 0 14px; color: #aeb3c2; font-size: 13px; }
     .homeLine { height: 1px; background: #2a2d36; margin: 14px 0; }
     button, input, select {
@@ -36,9 +45,8 @@
       padding: 10px;
       transition: transform .15s ease, background .15s ease, opacity .15s ease;
     }
-    button:disabled { opacity:.45; cursor:not-allowed; }
     button:active { transform: scale(.96); }
-    button { cursor: pointer; font-weight: 700; background: #2d64ff; border-color: #2d64ff; width: 100%; margin-top: 8px; }
+    button { cursor: pointer; font-weight: 700; background: #2d64ff; border-color: #2d64ff; }
     button.secondary { background: #252936; border-color: #343846; }
     button.danger { background: #d13b3b; border-color: #d13b3b; }
     button.good { background: #239b58; border-color: #239b58; }
@@ -46,194 +54,598 @@
     input, select { width: 100%; }
     input[type="color"] { height: 42px; padding: 4px; }
     input[type="file"] { font-size: 12px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .app {
-      width: 100%;
-      height: 100%;
-      display: grid;
-      grid-template-rows: 54px 1fr 72px;
-      background: radial-gradient(circle at top, #20263a, #0c0d12 55%);
-    }
-    .topbar {
-      height: 54px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: rgba(17,19,27,.92);
-      border-bottom: 1px solid #272b38;
-      z-index: 5;
-    }
-    .topbar b { font-size: 15px; }
-    .topbar span { display:block; font-size: 11px; color:#aeb3c2; }
-    .topbar button { width: auto; padding: 8px 12px; border-radius: 999px; margin-top: 0; }
-    .workspace { position: relative; overflow: hidden; padding: 14px; touch-action: none; }
-    .canvasStage { width: 100%; height: 100%; position: relative; overflow: hidden; }
-    .canvasWrap {
-      display: inline-block;
-      background: #fff;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 18px 60px rgba(0,0,0,.45);
-      transform-origin: 0 0;
-      transition: none;
-      touch-action: none;
-      will-change: transform;
-      user-select: none;
-    }
-    .canvasWrap.smooth { transition: transform .18s ease-out; }
-    canvas { display:block; background:#fff; }
-    .floatTools {
-      position: fixed;
-      right: 12px;
-      top: 68px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 10;
-    }
-    .floatTools button {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      padding: 0;
-      margin-top: 0;
-      box-shadow: 0 10px 24px rgba(0,0,0,.35);
-    }
-    .bottomBar {
-      height: 72px;
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-      padding: 8px 10px 10px;
-      background: rgba(17,19,27,.95);
-      border-top: 1px solid #272b38;
-      z-index: 30;
-    }
-    .bottomBar button {
-      min-width: 0;
-      padding: 8px 4px;
-      border-radius: 16px;
-      font-size: 11px;
-      background: #252936;
-      border-color: #343846;
-      margin-top: 0;
-    }
-    .bottomBar button.active { background:#2d64ff; border-color:#2d64ff; }
-    .sheetBackdrop {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.35);
-      z-index: 35;
-    }
-    .sheetBackdrop.show { display:block; }
-    .sheet {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 72vh;
-      z-index: 40;
-      background: #15171d;
-      border-radius: 24px 24px 0 0;
-      border: 1px solid rgba(255,255,255,.08);
-      box-shadow: 0 -20px 70px rgba(0,0,0,.55);
-      transform: translateY(105%);
-      transition: transform .25s cubic-bezier(.2,.8,.2,1);
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-    }
-    .sheet.open { transform: translateY(0); }
-    .sheetHead { padding: 10px 12px 4px; text-align: center; color: #aeb3c2; font-size: 12px; }
-    .handle { width: 58px; height: 5px; background: #747d92; border-radius: 999px; margin: 0 auto 8px; }
-    .tabs {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 7px;
-      padding: 8px 12px 10px;
-      border-bottom: 1px solid #272b38;
-    }
-    .tabs button {
-      background: #252936;
-      border-color: #343846;
-      border-radius: 999px;
-      padding: 9px 4px;
-      font-size: 12px;
-      margin-top: 0;
-    }
-    .tabs button.active { background:#2d64ff; border-color:#2d64ff; }
-    .sheetBody { overflow-y: auto; padding: 12px; }
-    .page { display:none; animation: fadeIn .18s ease both; }
-    .page.active { display:block; }
-    @keyframes fadeIn { from { opacity:.4; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
-    .card {
-      background:#1b1e26;
-      border:1px solid #2a2d36;
-      border-radius:18px;
-      padding:12px;
-      margin-bottom:12px;
-    }
-    .card h2 { margin:0 0 10px; font-size:15px; }
-    .status {
-      color:#b9bfce;
-      font-size:12px;
-      line-height:1.5;
-      background:#111319;
-      border:1px solid #2a2d36;
-      border-radius:12px;
-      padding:10px;
-      margin-top:10px;
-      word-break: break-word;
-    }
-    .hint { color:#9ca3b8; font-size:12px; line-height:1.45; }
-    .shortcutTools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .shortcutList { margin-top: 12px; display: grid; gap: 8px; }
-    .shortcutItem {
-      display: grid;
-      grid-template-columns: 12px 1fr auto;
-      gap: 8px;
-      align-items: center;
-      padding: 10px;
-      border: 1px solid #2a2d36;
-      border-radius: 14px;
-      background: #111319;
-    }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #777; box-shadow: 0 0 10px rgba(255,255,255,.15); }
-    .dot.online { background: #27d36b; box-shadow: 0 0 12px rgba(39,211,107,.75); }
-    .dot.offline { background: #e44343; box-shadow: 0 0 12px rgba(228,67,67,.55); }
-    .shortcutTitle { font-size: 13px; color: #fff; font-weight: 700; }
-    .shortcutCode { font-size: 11px; color: #9ca3b8; margin-top: 2px; }
-    .shortcutActions { display: flex; gap: 6px; }
-    .shortcutActions button { padding: 7px 9px; font-size: 11px; border-radius: 10px; width: auto; margin-top: 0; }
-    @media (min-width: 901px) {
-      .app { grid-template-rows: 58px 1fr; grid-template-columns: 330px 1fr; }
-      .topbar { grid-column: 1 / 3; }
-      .workspace { grid-column: 2; grid-row: 2; }
-      .sheetBackdrop, .bottomBar, .floatTools { display:none !important; }
-      .sheet {
-        position: static;
-        grid-column: 1;
-        grid-row: 2;
-        height: auto;
-        transform: none;
-        border-radius: 0;
-        border-top: 0;
-        display: grid;
-      }
-      .sheetHead { display:none; }
-    }
-  </style>
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }.app {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 54px 1fr 72px;
+  background: radial-gradient(circle at top, #20263a, #0c0d12 55%);
+}
+
+.topbar {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(17,19,27,.92);
+  border-bottom: 1px solid #272b38;
+  z-index: 5;
+}
+.topbar b { font-size: 15px; }
+.topbar span { display:block; font-size: 11px; color:#aeb3c2; }
+.topbar button { width: auto; padding: 8px 12px; border-radius: 999px; }
+
+.workspace {
+  position: relative;
+  overflow: hidden;
+  padding: 14px;
+  touch-action: none;
+}
+.canvasStage {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.canvasWrap {
+  display: inline-block;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  transform-origin: 0 0;
+  transition: none;
+  touch-action: none;
+  will-change: transform;
+  user-select: none;
+}
+.canvasWrap.smooth {
+  transition: transform .18s ease-out;
+}
+canvas { display:block; background:#fff; }
+
+.floatTools {
+  position: fixed;
+  right: 12px;
+  top: 68px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+.floatTools button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  padding: 0;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+
+.bottomBar {
+  height: 72px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 8px 10px 10px;
+  background: rgba(17,19,27,.95);
+  border-top: 1px solid #272b38;
+  z-index: 30;
+}
+.bottomBar button {
+  min-width: 0;
+  padding: 8px 4px;
+  border-radius: 16px;
+  font-size: 11px;
+  background: #252936;
+  border-color: #343846;
+}
+.bottomBar button.active { background:#2d64ff; border-color:#2d64ff; }
+
+.sheetBackdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 35;
+}
+.sheetBackdrop.show { display:block; }
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 72vh;
+  z-index: 40;
+  background: #15171d;
+  border-radius: 24px 24px 0 0;
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 -20px 70px rgba(0,0,0,.55);
+  transform: translateY(105%);
+  transition: transform .25s cubic-bezier(.2,.8,.2,1);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+.sheet.open { transform: translateY(0); }
+.sheetHead {
+  padding: 10px 12px 4px;
+  text-align: center;
+  color: #aeb3c2;
+  font-size: 12px;
+}
+.handle {
+  width: 58px;
+  height: 5px;
+  background: #747d92;
+  border-radius: 999px;
+  margin: 0 auto 8px;
+}
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+  padding: 8px 12px 10px;
+  border-bottom: 1px solid #272b38;
+}
+.tabs button {
+  background: #252936;
+  border-color: #343846;
+  border-radius: 999px;
+  padding: 9px 4px;
+  font-size: 12px;
+}
+.tabs button.active { background:#2d64ff; border-color:#2d64ff; }
+.sheetBody { overflow-y: auto; padding: 12px; }
+.page { display:none; animation: fadeIn .18s ease both; }
+.page.active { display:block; }
+@keyframes fadeIn { from { opacity:.4; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+.card {
+  background:#1b1e26;
+  border:1px solid #2a2d36;
+  border-radius:18px;
+  padding:12px;
+  margin-bottom:12px;
+}
+.card h2 { margin:0 0 10px; font-size:15px; }
+.status {
+  color:#b9bfce;
+  font-size:12px;
+  line-height:1.5;
+  background:#111319;
+  border:1px solid #2a2d36;
+  border-radius:12px;
+  padding:10px;
+  margin-top:10px;
+}
+.hint { color:#9ca3b8; font-size:12px; line-height:1.45; }
+
+.shortcutTools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.shortcutList { margin-top: 12px; display: grid; gap: 8px; }
+.shortcutItem {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #2a2d36;
+  border-radius: 14px;
+  background: #111319;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #777; box-shadow: 0 0 10px rgba(255,255,255,.15); }
+.dot.online { background: #27d36b; box-shadow: 0 0 12px rgba(39,211,107,.75); }
+.dot.offline { background: #e44343; box-shadow: 0 0 12px rgba(228,67,67,.55); }
+.shortcutTitle { font-size: 13px; color: #fff; font-weight: 700; }
+.shortcutCode { font-size: 11px; color: #9ca3b8; margin-top: 2px; }
+.shortcutActions { display: flex; gap: 6px; }
+.shortcutActions button { padding: 7px 9px; font-size: 11px; border-radius: 10px; }
+
+@media (min-width: 901px) {
+  .app { grid-template-rows: 58px 1fr; grid-template-columns: 330px 1fr; }
+  .topbar { grid-column: 1 / 3; }
+  .workspace { grid-column: 2; grid-row: 2; }
+  .sheetBackdrop, .bottomBar, .floatTools { display:none !important; }
+  .sheet {
+    position: static;
+    grid-column: 1;
+    grid-row: 2;
+    height: auto;
+    transform: none;
+    border-radius: 0;
+    border-top: 0;
+    display: grid;
+  }
+  .sheetHead { display:none; }
+}
+
+  
+.exportGrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.exportGrid .full { grid-column:1 / -1; }
+textarea.exportPreview {
+  width:100%; min-height:160px; resize:vertical;
+  border:1px solid #343846; border-radius:12px;
+  background:#0f1118; color:#dbe4ff; padding:10px;
+  font:12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.smallBtnRow { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+
+.exportPanel {
+  border:1px solid #2d3650;
+  background: linear-gradient(180deg,#171b27,#11141d);
+}
+.exportTabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:8px 0 10px; }
+.exportTabs button { background:#222738; border-color:#343b50; border-radius:999px; font-size:11px; padding:8px 4px; }
+.exportTabs button.active { background:#2d64ff; border-color:#2d64ff; }
+.exportStats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+.statBox { background:#0f1118; border:1px solid #2a2d36; border-radius:14px; padding:10px; font-size:12px; color:#c8d0e0; }
+.statBox b { display:block; font-size:16px; color:#fff; margin-bottom:2px; }
+.badgeRow { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.badge { border:1px solid #384158; background:#111827; border-radius:999px; padding:5px 8px; font-size:11px; color:#cdd6e8; }
+.warningBox { border:1px solid #7a5b22; background:#1d1710; color:#ffd99b; border-radius:12px; padding:9px; font-size:12px; line-height:1.45; margin-top:10px; }
+.previewCanvasBox { background:#0f1118; border:1px solid #2a2d36; border-radius:14px; padding:8px; margin-top:10px; overflow:auto; }
+.previewCanvasBox canvas { max-width:100%; height:auto; border-radius:10px; background:#000; }
+@media (max-width:420px){ .exportGrid{grid-template-columns:1fr;} .exportGrid .full{grid-column:auto;} .exportStats{grid-template-columns:1fr;} }
+
+
+/* ===== Pro UX Upgrade: Toast, minimap, drag/drop, undo/redo ===== */
+.toastContainer{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:min(420px,calc(100vw - 24px));}
+.toastItem{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.35;color:#fff;background:#2d64ff;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 32px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);transition:opacity .18s ease,transform .18s ease;}
+.toastItem.show{opacity:1;transform:translateY(0);}
+.toastItem.success{background:#239b58}.toastItem.error{background:#d13b3b}.toastItem.warn{background:#8a5a17}.toastItem.info{background:#2d64ff}
+.canvasStage.dragOver:after{content:'วางรูปลงช่องที่ต้องการ';position:absolute;inset:12px;border:2px dashed rgba(45,100,255,.9);border-radius:18px;background:rgba(45,100,255,.15);display:grid;place-items:center;color:white;font-weight:800;text-shadow:0 2px 12px rgba(0,0,0,.55);pointer-events:none;z-index:20;}
+.miniMap{position:fixed;right:12px;bottom:86px;width:136px;height:136px;background:#0f1118;border:1px solid #343846;border-radius:16px;padding:6px;box-shadow:0 12px 36px rgba(0,0,0,.45);z-index:16;display:none;}
+.miniMap.show{display:block}.miniMap canvas{width:100%;height:100%;border-radius:10px;background:#fff;}
+.proToolRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.proToolRow button{background:#252936;border-color:#343846;}
+@media (min-width:901px){.miniMap{bottom:18px;right:18px;width:160px;height:160px;display:block}.toastContainer{bottom:22px}}
+
+
+/* ===== LOD Loading Status Panel ===== */
+.lodStatusPanel{
+  position:fixed;right:12px;top:232px;width:210px;z-index:17;
+  background:rgba(15,17,24,.94);border:1px solid #343846;border-radius:16px;
+  box-shadow:0 12px 36px rgba(0,0,0,.45);padding:10px;color:#e9eefc;
+  font-size:12px;line-height:1.35;backdrop-filter:blur(10px);
+}
+.lodStatusPanel .lodTitle{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:6px;font-size:12px;}
+.lodStatusPanel .lodDot{width:9px;height:9px;border-radius:50%;background:#27d36b;box-shadow:0 0 10px rgba(39,211,107,.6);display:inline-block;margin-right:6px;}
+.lodStatusPanel.loading .lodDot{background:#ffb020;box-shadow:0 0 10px rgba(255,176,32,.8);animation:lodPulse .8s ease-in-out infinite alternate;}
+.lodStatusPanel.error .lodDot{background:#e44343;box-shadow:0 0 10px rgba(228,67,67,.7);}
+@keyframes lodPulse{from{opacity:.45;transform:scale(.85)}to{opacity:1;transform:scale(1.12)}}
+.lodBar{height:7px;background:#252936;border-radius:999px;overflow:hidden;margin:7px 0;border:1px solid rgba(255,255,255,.08)}
+.lodBarFill{height:100%;width:0%;background:#2d64ff;border-radius:999px;transition:width .2s ease;}
+.lodMeta{color:#aeb3c2;font-size:11px;display:grid;gap:2px;}
+@media (max-width:700px){.lodStatusPanel{right:12px;top:122px;width:172px;font-size:11px;padding:8px}.lodMeta{font-size:10px}}
+@media (min-width:901px){.lodStatusPanel{right:18px;top:78px;width:220px}}
+
+
+
+/* ===== UX Pro Refactor: progressive disclosure + cleaner layout ===== */
+body.ux-pro-refactor{background:linear-gradient(135deg,#080b12 0%,#101726 48%,#07101a 100%);} 
+body.ux-pro-refactor .topbar{height:64px;padding:10px 14px;background:rgba(12,16,25,.86);backdrop-filter:blur(14px);border-bottom:1px solid rgba(148,163,184,.18);} 
+body.ux-pro-refactor .topbar b{font-size:16px;letter-spacing:.1px} 
+body.ux-pro-refactor .topbarActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end} 
+body.ux-pro-refactor .pillToggle{display:flex;background:#111827;border:1px solid #2a3344;border-radius:999px;padding:3px;gap:3px} 
+body.ux-pro-refactor .pillToggle button{background:transparent;border:0;border-radius:999px;padding:7px 10px;font-size:11px;color:#aeb8c9;box-shadow:none} 
+body.ux-pro-refactor .pillToggle button.active{background:#2d64ff;color:white} 
+body.ux-pro-refactor .sheet{background:rgba(17,20,30,.96);border-color:rgba(148,163,184,.12)} 
+body.ux-pro-refactor .tabs{grid-template-columns:repeat(5, minmax(0,1fr));padding:10px 12px;gap:6px;background:rgba(8,11,18,.18)} 
+body.ux-pro-refactor .tabs button, body.ux-pro-refactor .bottomBar button{border-radius:14px;background:#1a2232;border-color:#2b3548;color:#cbd5e1} 
+body.ux-pro-refactor .tabs button.active, body.ux-pro-refactor .bottomBar button.active{background:#2563eb;color:white;border-color:#3b82f6} 
+body.ux-pro-refactor .sheetBody{padding:14px} 
+body.ux-pro-refactor .card{background:rgba(22,27,39,.92);border:1px solid rgba(148,163,184,.14);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.18)} 
+body.ux-pro-refactor .card h2{font-size:15px;margin-bottom:6px} 
+body.ux-pro-refactor label{font-weight:700;color:#d5dce9;font-size:11px;letter-spacing:.08px} 
+body.ux-pro-refactor input, body.ux-pro-refactor select, body.ux-pro-refactor textarea{background:#0f1624;border-color:#273244;border-radius:14px;color:#f8fafc} 
+body.ux-pro-refactor button{border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.16)} 
+body.ux-pro-refactor .workspace{padding:18px;background:radial-gradient(circle at 15% 0%,rgba(45,100,255,.13),transparent 35%)} 
+.uxHero{background:linear-gradient(135deg,rgba(37,99,235,.20),rgba(20,184,166,.10));border:1px solid rgba(96,165,250,.22);border-radius:22px;padding:14px;margin-bottom:12px} 
+.uxHero h2{font-size:16px!important;margin:0 0 5px!important}.uxHero p{margin:0;color:#b6c2d3;font-size:12px;line-height:1.45}.uxSteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.uxStep{background:rgba(15,23,42,.76);border:1px solid rgba(148,163,184,.14);border-radius:16px;padding:10px;font-size:11px;color:#cbd5e1}.uxStep b{display:block;color:#fff;font-size:12px;margin-bottom:3px} 
+.uxSectionTitle{font-size:12px;font-weight:900;color:#fff;margin:4px 0 8px;display:flex;align-items:center;gap:8px}.uxSectionTitle:before{content:'';width:8px;height:8px;border-radius:50%;background:#3b82f6;box-shadow:0 0 14px rgba(59,130,246,.8)} 
+.uxAdvancedBox{margin-top:12px;border:1px solid rgba(148,163,184,.14);border-radius:18px;overflow:hidden;background:rgba(15,23,42,.50)} 
+.uxAdvancedBox summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:900;color:#fff;background:rgba(37,99,235,.10);display:flex;align-items:center;justify-content:space-between} 
+.uxAdvancedBox summary:after{content:'⌄';color:#93c5fd}.uxAdvancedBox[open] summary:after{content:'⌃'} 
+.uxAdvancedGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px} 
+.uxBasicGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px} 
+.uxHelp{color:#91a0b6;font-size:11px;line-height:1.35;margin:4px 0 0}.uxInlineHint{font-size:11px;color:#aab7ca;background:#0f1624;border:1px solid #273244;padding:8px;border-radius:12px;margin-top:8px}.uxCopyRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.uxCopyRow button{background:#1f2937;border-color:#334155}.uxBadge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:#0f172a;border:1px solid #334155;color:#cbd5e1;font-size:11px}.uxBadge.good{border-color:#14532d;background:#052e16;color:#bbf7d0}.uxBadge.warn{border-color:#713f12;background:#241306;color:#fde68a}
+body.basic-mode .proOnly{display:none!important}body.basic-mode .uxAdvancedBox:not([open]){display:block}body.basic-mode .tabs button[data-tab="grid"],body.basic-mode .tabs button[data-tab="share"]{opacity:.62} 
+body.basic-mode .exportPanel .warningBox{display:none} 
+@media (max-width:700px){.uxSteps{grid-template-columns:1fr}.uxBasicGrid,.uxAdvancedGrid{grid-template-columns:1fr}body.ux-pro-refactor .topbar{height:auto;align-items:flex-start;gap:8px}body.ux-pro-refactor .topbarActions{gap:6px}.uxHero{padding:12px}.lodStatusPanel{top:142px!important}}
+@media (min-width:901px){body.ux-pro-refactor .app{grid-template-columns:360px 1fr;grid-template-rows:64px 1fr}.topbarActions{min-width:245px}.uxBasicGrid,.uxAdvancedGrid{grid-template-columns:1fr 1fr}}
+
+  
+
+/* ===== Mobile UI Collision Fix v2 ===== */
+:root{--safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px);} 
+@media (max-width:700px){
+  html, body{height:100dvh; overflow:hidden;}
+  body.ux-pro-refactor .app{
+    height:100dvh;
+    grid-template-rows:64px minmax(0,1fr) calc(62px + var(--safe-bottom));
+  }
+  body.ux-pro-refactor .topbar{
+    height:64px !important;
+    min-height:64px;
+    padding:7px 8px calc(6px + var(--safe-top));
+    align-items:center !important;
+    gap:6px;
+    overflow:hidden;
+  }
+  body.ux-pro-refactor .topbar > div:first-child{
+    min-width:0;
+    flex:1 1 auto;
+  }
+  body.ux-pro-refactor .topbar b{
+    display:block;
+    max-width:46vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:13px;
+  }
+  body.ux-pro-refactor .topbar span{
+    max-width:46vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:10px;
+  }
+  body.ux-pro-refactor .topbarActions{
+    flex:0 0 auto;
+    display:flex;
+    flex-wrap:nowrap !important;
+    gap:4px !important;
+    transform:scale(.92);
+    transform-origin:right center;
+  }
+  body.ux-pro-refactor .pillToggle{padding:2px; gap:2px;}
+  body.ux-pro-refactor .pillToggle button{padding:5px 7px;font-size:10px;min-width:0;}
+  body.ux-pro-refactor #openMenuBtn{
+    padding:7px 8px;
+    font-size:11px;
+    border-radius:999px;
+    margin-left:0;
+    flex:0 0 auto;
+  }
+  body.ux-pro-refactor .workspace{
+    padding:8px;
+    min-height:0;
+  }
+  .canvasStage{height:100%;}
+  .floatTools{
+    right:8px;
+    top:76px;
+    gap:6px;
+    z-index:18;
+  }
+  .floatTools button{
+    width:38px;
+    height:38px;
+    font-size:15px;
+  }
+  .lodStatusPanel{
+    top:76px !important;
+    left:8px;
+    right:auto !important;
+    width:min(168px, calc(100vw - 68px));
+    padding:7px 8px;
+    font-size:10px;
+    border-radius:13px;
+    z-index:17;
+    opacity:.92;
+  }
+  .lodStatusPanel .lodTitle{font-size:10px;margin-bottom:3px;}
+  .lodBar{height:5px;margin:5px 0;}
+  .lodMeta{font-size:9px;gap:1px;}
+  .miniMap{
+    right:8px;
+    bottom:calc(72px + var(--safe-bottom));
+    width:84px;
+    height:84px;
+    padding:4px;
+    border-radius:12px;
+    opacity:.9;
+    z-index:15;
+  }
+  .bottomBar{
+    height:calc(62px + var(--safe-bottom));
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:5px;
+    padding:6px 7px calc(6px + var(--safe-bottom));
+  }
+  .bottomBar button{
+    border-radius:12px;
+    font-size:10px;
+    padding:6px 2px;
+    line-height:1.05;
+    white-space:nowrap;
+  }
+  .sheet{
+    height:min(76dvh, calc(100dvh - 76px));
+    border-radius:18px 18px 0 0;
+    grid-template-rows:auto auto minmax(0,1fr);
+  }
+  .sheetHead{padding:7px 10px 2px;font-size:10px;}
+  .handle{width:44px;height:4px;margin-bottom:5px;}
+  body.ux-pro-refactor .tabs{
+    display:flex !important;
+    grid-template-columns:none !important;
+    overflow-x:auto;
+    gap:6px;
+    padding:7px 8px;
+    scrollbar-width:none;
+  }
+  body.ux-pro-refactor .tabs::-webkit-scrollbar{display:none;}
+  body.ux-pro-refactor .tabs button{
+    flex:0 0 auto;
+    min-width:68px;
+    font-size:10px;
+    padding:7px 8px;
+    border-radius:12px;
+  }
+  body.ux-pro-refactor .sheetBody{
+    padding:9px;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:calc(18px + var(--safe-bottom));
+  }
+  body.ux-pro-refactor .card{
+    padding:10px;
+    border-radius:16px;
+    margin-bottom:9px;
+  }
+  body.ux-pro-refactor .card h2{font-size:13px;margin-bottom:6px;}
+  .row,.exportGrid,.smallBtnRow,.proToolRow,.shortcutTools,.uxCopyRow{
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+  }
+  .uxSteps,.uxBasicGrid,.uxAdvancedGrid{grid-template-columns:1fr !important;gap:7px;}
+  .uxHero{padding:10px;border-radius:16px;margin-bottom:9px;}
+  .uxHero h2{font-size:14px !important;}
+  .uxHero p,.uxStep,.hint,.status,.uxHelp,.uxInlineHint{font-size:10.5px;}
+  label{font-size:10.5px;margin:8px 0 4px;}
+  button,input,select,textarea{font-size:12px;padding:9px;border-radius:12px;}
+  textarea.exportPreview{min-height:120px;font-size:10px;}
+  .previewCanvasBox{max-height:170px;overflow:auto;}
+  .previewCanvasBox canvas{max-width:100%;}
+  .toastContainer{
+    bottom:calc(70px + var(--safe-bottom));
+    width:calc(100vw - 18px);
+  }
+  .toastItem{font-size:11px;padding:9px 11px;border-radius:12px;}
+}
+@media (max-width:380px){
+  body.ux-pro-refactor .topbarActions{transform:scale(.82);margin-right:-10px;}
+  body.ux-pro-refactor .pillToggle button{padding:5px 6px;font-size:9px;}
+  body.ux-pro-refactor #openMenuBtn{padding:6px 7px;font-size:10px;}
+  .floatTools button{width:34px;height:34px;}
+  .lodStatusPanel{width:145px;}
+  .miniMap{width:72px;height:72px;}
+  .bottomBar button{font-size:9px;}
+}
+@media (orientation:landscape) and (max-height:520px){
+  body.ux-pro-refactor .app{grid-template-rows:52px minmax(0,1fr) 54px;}
+  body.ux-pro-refactor .topbar{height:52px !important;min-height:52px;padding:5px 8px;}
+  .sheet{height:min(84dvh, calc(100dvh - 56px));}
+  .lodStatusPanel{display:none;}
+  .miniMap{display:none!important;}
+  .floatTools{top:60px;}
+}
+
+  
+
+/* ===== Roblox Terrain Image Pack UI ===== */
+.terrainImageTitle{margin-top:12px}.terrainImageExportRow button{min-width:0}
+@media (max-width:700px){.terrainImageExportRow{grid-template-columns:1fr !important}.terrainImageHint{font-size:10.5px}}
+
+
+/* ===== Home/Login Scroll Fix =====
+   body ต้อง overflow:hidden ตอนอยู่หน้า editor เพื่อไม่ให้ canvas หลุด
+   แต่หน้าแรกต้องให้ section นี้เลื่อนเองได้ */
+#homeScreen.homeScreen{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch;
+  place-items:start center;
+}
+#homeScreen .homeCard{
+  margin-top:max(18px, env(safe-area-inset-top));
+  margin-bottom:max(28px, env(safe-area-inset-bottom));
+}
+@media (max-width:700px){
+  #homeScreen.homeScreen{
+    height:100dvh !important;
+    min-height:100dvh !important;
+    padding:14px;
+    align-items:start;
+  }
+  #homeScreen .homeCard{
+    width:100%;
+  }
+}
+
+
+
+/* ===== Professional Reasoned Copy Layer ===== */
+:root{
+  --pro-bg:#070b12;
+  --pro-panel:rgba(14,19,31,.94);
+  --pro-panel-2:rgba(20,27,42,.92);
+  --pro-border:rgba(148,163,184,.18);
+  --pro-text:#f8fafc;
+  --pro-muted:#94a3b8;
+  --pro-accent:#3b82f6;
+  --pro-good:#22c55e;
+  --pro-warn:#f59e0b;
+  --pro-danger:#ef4444;
+}
+body.reasoned-pro .homeCard,
+body.reasoned-pro .card,
+body.reasoned-pro .sheet,
+body.reasoned-pro .lodStatusPanel,
+body.reasoned-pro .miniMap{
+  border-color:var(--pro-border)!important;
+  background:linear-gradient(180deg,var(--pro-panel-2),var(--pro-panel))!important;
+}
+body.reasoned-pro .homeCard h1,
+body.reasoned-pro .card h2{letter-spacing:.1px;}
+body.reasoned-pro .hint,
+body.reasoned-pro .uxHelp,
+body.reasoned-pro .status{color:#b6c2d3;}
+.proReason{
+  margin:6px 0 2px;
+  padding:8px 10px;
+  border:1px solid rgba(59,130,246,.20);
+  border-radius:12px;
+  background:rgba(15,23,42,.62);
+  color:#aebbd0;
+  font-size:11px;
+  line-height:1.45;
+}
+.proReason:before{
+  content:'เหตุผล: ';
+  color:#bfdbfe;
+  font-weight:900;
+}
+.proBanner{
+  margin:0 0 12px;
+  padding:12px;
+  border:1px solid rgba(59,130,246,.24);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(37,99,235,.18),rgba(20,184,166,.09));
+}
+.proBannerTitle{font-weight:900;color:#fff;font-size:14px;margin-bottom:5px;}
+.proBannerText{color:#b6c2d3;font-size:12px;line-height:1.45;}
+.proStatePill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 8px;
+  border-radius:999px;
+  border:1px solid rgba(59,130,246,.28);
+  background:#0f172a;
+  color:#dbeafe;
+  font-size:11px;
+  font-weight:800;
+  margin-top:8px;
+}
+body.reasoned-pro button.good{background:linear-gradient(135deg,#16a34a,#22c55e)!important;border-color:#22c55e!important;}
+body.reasoned-pro button{letter-spacing:.05px;}
+body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
+
+</style>
 </head>
 <body>
+  <div id="toastContainer" class="toastContainer" aria-live="polite"></div>
   <section id="homeScreen" class="homeScreen">
     <div class="homeCard">
       <h1>Image Grid Builder</h1>
-      <p>ล็อกอินก่อนใช้งาน ใช้ ID/Password ธรรมดา และเซฟโปรเจกต์บน Firebase ตาม ID</p>
+      <p>ล็อกอินก่อนใช้งาน เพื่อเซฟโปรเจกต์ออนไลน์บน Firebase ตาม ID และโหลดงานล่าสุดกลับมาได้</p>
 
       <div id="authBox">
-        <h2>Login / Register</h2>
+        <h2 style="font-size:16px;margin:0 0 8px;">Login / Register</h2>
         <label>ID / ชื่อผู้ใช้</label>
         <input id="authEmail" type="text" placeholder="อย่างน้อย 4 ตัว เช่น rat555">
         <label>Password</label>
@@ -267,7 +679,7 @@
         <input id="importProjectFileInput" type="file" accept="application/json,.json">
 
         <div class="homeLine"></div>
-        <h2>ทางลัดเซิร์ฟเวอร์</h2>
+        <h2 style="font-size:16px;margin:0 0 8px;">ทางลัดเซิร์ฟเวอร์</h2>
         <label>ชื่อทางลัด</label>
         <input id="shortcutNameInput" type="text" placeholder="เช่น เซิร์ฟเพื่อน / โปรเจกต์แมพ" />
         <label>Server Code</label>
@@ -279,185 +691,261 @@
         <div id="roomShortcutList" class="shortcutList"></div>
       </div>
 
-      <p class="hint">ระบบนี้ใช้แค่ Realtime Database ไม่ต้องเปิด Firebase Authentication</p>
+      <p class="hint">ระบบนี้ใช้ Realtime Database เป็นบัญชีแบบง่าย ไม่ต้องเปิด Firebase Authentication แต่ควรตั้ง Security Rules ให้รัดกุมก่อนเผยแพร่จริง</p>
     </div>
-  </section>
-
-  <main id="appMain" class="app hidden">
+  </section>  <main id="appMain" class="app hidden">
     <header class="topbar">
       <div><b>Image Grid Builder</b><span id="statusText">พร้อมใช้งาน</span></div>
       <button id="openMenuBtn">เมนู</button>
-    </header>
+    </header><section class="workspace" id="workspace">
+  <div class="canvasStage" id="canvasStage">
+    <div id="canvasWrap" class="canvasWrap"><canvas id="canvas"></canvas></div>
+  </div>
+  <div id="miniMap" class="miniMap"><canvas id="miniMapCanvas" width="150" height="150"></canvas></div>
+  <div id="lodStatusPanel" class="lodStatusPanel">
+    <div class="lodTitle"><span><span id="lodStatusDot" class="lodDot"></span><span id="lodStatusTitle">รายละเอียดพร้อมแล้ว</span></span><span id="lodPercent">100%</span></div>
+    <div class="lodBar"><div id="lodBarFill" class="lodBarFill" style="width:100%"></div></div>
+    <div class="lodMeta">
+      <div id="lodQueueText">คิว: 0</div>
+      <div id="lodModeText">โหมด: พร้อมใช้งาน</div>
+      <div id="lodVisibleText">ช่องที่เห็น: -</div>
+    </div>
+  </div>
+</section>
 
-    <section class="workspace" id="workspace">
-      <div class="canvasStage">
-        <div id="canvasWrap" class="canvasWrap"><canvas id="canvas"></canvas></div>
+<div class="floatTools">
+  <button id="selectToggleBtn">☝</button>
+  <button id="zoomInBtn">＋</button>
+  <button id="zoomOutBtn">－</button>
+</div>
+
+<nav class="bottomBar">
+  <button data-open-tab="setup" class="active">ตั้งค่า</button>
+  <button data-open-tab="layer">เลเยอร์</button>
+  <button data-open-tab="grid">Grid</button>
+  <button data-open-tab="export">Export</button>
+  <button id="closeSheetBtn">ปิด</button>
+</nav>
+
+<div id="sheetBackdrop" class="sheetBackdrop"></div>
+
+<aside id="sheet" class="sheet open">
+  <div class="sheetHead" id="sheetHead"><div class="handle"></div>แตะนอกเมนูหรือกดปิดเพื่อปิด</div>
+  <div class="tabs">
+    <button data-tab="setup" class="active">ตั้งค่า</button>
+    <button data-tab="layer">เลเยอร์</button>
+    <button data-tab="grid">Grid</button>
+    <button data-tab="export">Export</button>
+    <button data-tab="share">แชร์</button>
+  </div>
+
+  <div class="sheetBody">
+    <section class="page active" data-page="setup">
+      <div class="card">
+        <h2>ตารางหลัก</h2>
+        <div class="row">
+          <div><label>คอลัมน์</label><input id="cols" type="number" min="1" max="100" value="4"></div>
+          <div><label>แถว</label><input id="rows" type="number" min="1" max="100" value="4"></div>
+        </div>
+        <div class="row">
+          <div><label>กว้างต่อช่อง px</label><input id="cellW" type="number" min="10" value="160"></div>
+          <div><label>สูงต่อช่อง px</label><input id="cellH" type="number" min="10" value="160"></div>
+        </div>
+        <button id="buildBtn">สร้าง / รีเซ็ตตาราง</button>
+        <div id="gridInfo" class="status"></div>
+        <div class="homeLine"></div>
+        <h2 style="font-size:14px;margin:0 0 8px;">ช่องว่าง / พื้นเริ่มต้น</h2>
+        <label>ช่องที่ยังไม่ได้ใส่รูปให้เป็นพื้นอะไร</label>
+        <select id="emptyCellPreset">
+          <option value="transparent" selected>ช่องว่างโปร่งใส / ไม่วิเคราะห์เป็นพื้น</option>
+          <option value="grass">Grass / พื้นหญ้า</option>
+          <option value="sand">Sand / ทราย</option>
+          <option value="water">Water / น้ำ</option>
+          <option value="rock">Rock / หิน</option>
+          <option value="ground">Ground / ดิน</option>
+          <option value="snow">Snow / หิมะ</option>
+          <option value="custom">Custom / สีเอง</option>
+        </select>
+        <label>สีช่องว่าง / สี Custom</label>
+        <input id="emptyCellColor" type="color" value="#5f9650">
+        <p class="hint">ค่านี้ใช้กับช่องที่ยังไม่มีรูปเท่านั้น และจะถูกส่งไปใน Roblox Export ด้วย ไม่ให้ระบบเดาเป็นหญ้าเอง</p>
+      </div>
+
+      <div class="card">
+        <h2>โหมดภาพ</h2>
+        <label>โหมด</label>
+        <select id="mode">
+          <option value="combine">Combine Mode - รวมภาพหลายช่อง</option>
+          <option value="split">Split Mode - แยกภาพเดียว</option>
+        </select>
+        <div id="combineBox">
+          <label>รูปสำหรับช่องที่เลือก</label>
+          <input id="cellUpload" type="file" accept="image/*">
+          <button id="fillSelectedBtn" class="secondary">ใส่รูปลงพื้นที่ที่เลือก</button>
+        </div>
+        <div id="splitBox" style="display:none;">
+          <label>รูปเดียวสำหรับแยกตามตาราง</label>
+          <input id="splitUpload" type="file" accept="image/*">
+          <button id="splitBtn" class="secondary">แยกภาพเข้าช่องทั้งหมด</button>
+        </div>
       </div>
     </section>
 
-    <div class="floatTools">
-      <button id="selectToggleBtn">☝</button>
-      <button id="zoomInBtn">＋</button>
-      <button id="zoomOutBtn">－</button>
-    </div>
+    <section class="page" data-page="layer">
+      <div class="card">
+        <h2>การเลือกพื้นที่</h2>
+        <label>ระบบเลือกพื้นที่</label>
+        <select id="selectionEnabled">
+          <option value="on">เปิดการเลือก</option>
+          <option value="off">ปิดการเลือก / View Mode</option>
+        </select>
+        <label>วิธีเลือก</label>
+        <select id="selectMode">
+          <option value="click">แตะ / คลิก</option>
+          <option value="drag">ลากครอบ</option>
+        </select>
+        <label>ระดับการเลือก</label>
+        <select id="selectLevel">
+          <option value="major">ช่องใหญ่</option>
+          <option value="minor">ช่องย่อย</option>
+        </select>
+        <div class="proToolRow">
+          <button id="undoBtn" class="secondary" type="button">Undo Ctrl+Z</button>
+          <button id="redoBtn" class="secondary" type="button">Redo Ctrl+Y</button>
+        </div>
+        <div class="proToolRow">
+          <button id="selectAllBtn" class="secondary" type="button">เลือกทั้งหมด</button>
+          <button id="toggleMiniMapBtn" class="secondary" type="button">เปิด/ปิด Minimap</button>
+        </div>
+        <button id="clearSelectionBtn" class="secondary">ล้างการเลือก</button>
+        <button id="deleteSelectedBtn" class="danger">ลบเฉพาะส่วนที่เลือก</button>
+        <p class="hint">ปุ่มลอยใช้สลับ ☝ เลือกช่อง / ✋ View Mode: ใช้สองนิ้วซูมแบบไม่หน่วง โดยยึดจุดกึ่งกลางนิ้วเป็นจุดซูม</p>
+      </div>
+    </section>
 
-    <nav class="bottomBar">
-      <button data-open-tab="setup" class="active">ตั้งค่า</button>
-      <button data-open-tab="layer">เลเยอร์</button>
-      <button data-open-tab="grid">Grid</button>
-      <button data-open-tab="export">Export</button>
-      <button id="closeSheetBtn">ปิด</button>
-    </nav>
+    <section class="page" data-page="grid">
+      <div class="card">
+        <h2>ตารางซ้อน</h2>
+        <label>โหมดตาราง</label>
+        <select id="gridGlobalMode">
+          <option value="custom">เลือกเปิด/ปิดเอง</option>
+          <option value="all">เปิดทั้งหมด</option>
+          <option value="none">ปิดทั้งหมด</option>
+        </select>
+        <label>ตารางหลัก</label>
+        <select id="showMajorGrid">
+          <option value="yes">เปิด</option>
+          <option value="no">ปิด</option>
+        </select>
+        <div class="row">
+          <div><label>ชื่อตารางหลัก</label><input id="majorGridName" type="text" value="ตารางหลัก"></div>
+          <div><label>สีตารางหลัก</label><input id="majorColor" type="color" value="#111111"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>ตารางย่อย</h2>
+        <div id="minorGridList"></div>
+        <button id="addMinorGridBtn" class="secondary">+ เพิ่มตารางย่อย</button>
+      </div>
+    </section>
 
-    <div id="sheetBackdrop" class="sheetBackdrop"></div>
-
-    <aside id="sheet" class="sheet open">
-      <div class="sheetHead" id="sheetHead"><div class="handle"></div>แตะนอกเมนูหรือกดปิดเพื่อปิด</div>
-      <div class="tabs">
-        <button data-tab="setup" class="active">ตั้งค่า</button>
-        <button data-tab="layer">เลเยอร์</button>
-        <button data-tab="grid">Grid</button>
-        <button data-tab="export">Export</button>
-        <button data-tab="share">แชร์</button>
+    <section class="page" data-page="export">
+      <div class="card">
+        <h2>ส่งออก</h2>
+        <label>Zoom</label>
+        <input id="zoom" type="range" min="10" max="250" value="80">
+        <div id="zoomText" class="status">80%</div>
+        <label>ตอนดาวน์โหลดให้ติดตารางไหม</label>
+        <select id="exportGridMode">
+          <option value="with">ติดตาราง</option>
+          <option value="without">ไม่ติดตาราง</option>
+        </select>
+        <label>ตอนดาวน์โหลด PNG ให้จัดการช่องว่างยังไง</label>
+        <select id="emptyPngMode">
+          <option value="transparent" selected>ปล่อยช่องว่างโปร่งใสจริง</option>
+          <option value="white">ถมช่องว่างเป็นสีขาว</option>
+          <option value="material">ถมตามวัสดุ/สีช่องว่างที่เลือก</option>
+        </select>
+        <button id="downloadAllBtn" class="good">ดาวน์โหลดภาพรวม PNG</button>
+        <button id="downloadSelectedBtn" class="secondary">ดาวน์โหลดเฉพาะส่วนที่เลือก</button>
       </div>
 
-      <div class="sheetBody">
-        <section class="page active" data-page="setup">
-          <div class="card">
-            <h2>ตารางหลัก</h2>
-            <div class="row">
-              <div><label>คอลัมน์</label><input id="cols" type="number" min="1" max="100" value="4"></div>
-              <div><label>แถว</label><input id="rows" type="number" min="1" max="100" value="4"></div>
-            </div>
-            <div class="row">
-              <div><label>กว้างต่อช่อง px</label><input id="cellW" type="number" min="10" value="160"></div>
-              <div><label>สูงต่อช่อง px</label><input id="cellH" type="number" min="10" value="160"></div>
-            </div>
-            <button id="buildBtn">สร้าง / รีเซ็ตตาราง</button>
-            <div id="gridInfo" class="status"></div>
-          </div>
-
-          <div class="card">
-            <h2>โหมดภาพ</h2>
-            <label>โหมด</label>
-            <select id="mode">
-              <option value="combine">Combine Mode - รวมภาพหลายช่อง</option>
-              <option value="split">Split Mode - แยกภาพเดียว</option>
-            </select>
-            <div id="combineBox">
-              <label>รูปสำหรับช่องที่เลือก</label>
-              <input id="cellUpload" type="file" accept="image/*">
-              <button id="fillSelectedBtn" class="secondary">ใส่รูปลงพื้นที่ที่เลือก</button>
-            </div>
-            <div id="splitBox" style="display:none;">
-              <label>รูปเดียวสำหรับแยกตามตาราง</label>
-              <input id="splitUpload" type="file" accept="image/*">
-              <button id="splitBtn" class="secondary">แยกภาพเข้าช่องทั้งหมด</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="page" data-page="layer">
-          <div class="card">
-            <h2>การเลือกพื้นที่</h2>
-            <label>ระบบเลือกพื้นที่</label>
-            <select id="selectionEnabled">
-              <option value="on">เปิดการเลือก</option>
-              <option value="off">ปิดการเลือก / View Mode</option>
-            </select>
-            <label>วิธีเลือก</label>
-            <select id="selectMode">
-              <option value="click">แตะ / คลิก</option>
-              <option value="drag">ลากครอบ</option>
-            </select>
-            <label>ระดับการเลือก</label>
-            <select id="selectLevel">
-              <option value="major">ช่องใหญ่</option>
-              <option value="minor">ช่องย่อย</option>
-            </select>
-            <button id="clearSelectionBtn" class="secondary">ล้างการเลือก</button>
-            <button id="deleteSelectedBtn" class="danger">ลบเฉพาะส่วนที่เลือก</button>
-            <p class="hint">ปุ่มลอยใช้สลับ ☝ เลือกช่อง / ✋ View Mode: ใช้สองนิ้วซูมและเลื่อนภาพ</p>
-          </div>
-        </section>
-
-        <section class="page" data-page="grid">
-          <div class="card">
-            <h2>ตารางซ้อน</h2>
-            <label>โหมดตาราง</label>
-            <select id="gridGlobalMode">
-              <option value="custom">เลือกเปิด/ปิดเอง</option>
-              <option value="all">เปิดทั้งหมด</option>
-              <option value="none">ปิดทั้งหมด</option>
-            </select>
-            <label>ตารางหลัก</label>
-            <select id="showMajorGrid">
-              <option value="yes">เปิด</option>
-              <option value="no">ปิด</option>
-            </select>
-            <div class="row">
-              <div><label>ชื่อตารางหลัก</label><input id="majorGridName" type="text" value="ตารางหลัก"></div>
-              <div><label>สีตารางหลัก</label><input id="majorColor" type="color" value="#111111"></div>
-            </div>
-          </div>
-          <div class="card">
-            <h2>ตารางย่อย</h2>
-            <div id="minorGridList"></div>
-            <button id="addMinorGridBtn" class="secondary">+ เพิ่มตารางย่อย</button>
-          </div>
-        </section>
-
-        <section class="page" data-page="export">
-          <div class="card">
-            <h2>ส่งออก</h2>
-            <label>Zoom</label>
-            <input id="zoom" type="range" min="10" max="250" value="80">
-            <div id="zoomText" class="status">80%</div>
-            <label>ตอนดาวน์โหลดให้ติดตารางไหม</label>
-            <select id="exportGridMode">
-              <option value="with">ติดตาราง</option>
-              <option value="without">ไม่ติดตาราง</option>
-            </select>
-            <button id="downloadAllBtn" class="good">ดาวน์โหลดภาพรวม PNG</button>
-            <button id="downloadSelectedBtn" class="secondary">ดาวน์โหลดเฉพาะส่วนที่เลือก</button>
-            <button id="downloadProjectFileBtn" class="secondary">ดาวน์โหลดไฟล์โปรเจกต์ .json</button>
-          </div>
-        </section>
-
-        <section class="page" data-page="share">
-          <div class="card">
-            <h2>โปรเจกต์ / ห้อง</h2>
-            <div id="projectStatus" class="status">ยังไม่ได้เชื่อมห้อง</div>
-            <button id="saveProjectBtn" class="good">เซฟขึ้นบัญชี / Firebase</button>
-            <button id="copyProjectBtn" class="secondary">คัดลอกโปรเจกต์เป็นข้อความ</button>
-            <button id="backHomeBtn" class="secondary">กลับหน้าแรก</button>
-          </div>
-          <div class="card">
-            <h2>แชร์ด้วยลิงก์</h2>
-            <button id="copyShareLinkBtn" class="secondary">คัดลอกลิงก์โปรเจกต์</button>
-            <p class="hint">ลิงก์ใช้จริงเมื่อเว็บถูกโฮสต์ออนไลน์และต่อฐานข้อมูลกลาง</p>
-          </div>
-          <div class="card">
-            <h2>แชร์ด้วย Code</h2>
-            <label>อายุ Code</label>
-            <select id="codeExpireMode">
-              <option value="forever">ถาวร</option>
-              <option value="10m">10 นาที</option>
-              <option value="1h">1 ชั่วโมง</option>
-              <option value="24h">24 ชั่วโมง</option>
-            </select>
-            <button id="generateCodeBtn">สร้าง / รีโค้ดใหม่</button>
-            <button id="toggleCodeBtn" class="secondary">เปิด / ปิด Code</button>
-            <div id="shareCodeBox" class="status">ยังไม่มี Code</div>
-          </div>
-        </section>
+      <div class="card exportPanel">
+        <h2>Roblox Export Studio</h2>
+        <p class="hint">Pro Export: วิเคราะห์เป็นช่องย่อยจริง, ทำ heightmap, biome, slope smoothing, สร้าง AI Prompt, JSON, CSV และ Roblox Lua ที่ใช้สร้าง Part/Terrain ใน Roblox Studio ได้ทันที</p>
+        <div class="exportTabs">
+          <button id="exportTabPrompt" class="active" type="button">AI Prompt</button>
+          <button id="exportTabData" type="button">Data</button>
+          <button id="exportTabLua" type="button">Lua</button>
+        </div>
+        <div class="exportGrid">
+          <div><label>Studs ต่อช่องใหญ่</label><input id="studsPerCell" type="number" min="1" value="100"></div>
+          <div><label>Max Height studs</label><input id="maxHeightStuds" type="number" min="1" value="80"></div>
+          <div><label>ระดับ Export</label><select id="exportDetailMode"><option value="major">ช่องใหญ่เท่านั้น</option><option value="subdiv" selected>ช่องย่อยจริง Pro</option></select></div>
+          <div><label>Subdiv ต่อช่องใหญ่</label><input id="exportSubdiv" type="number" min="1" max="16" value="4"></div>
+          <div><label>ความหนา Part</label><input id="partThickness" type="number" min="1" value="8"></div>
+          <div><label>Sea Level studs</label><input id="seaLevelStuds" type="number" value="4"></div>
+          <div><label>ตำแหน่ง Origin</label><select id="originMode"><option value="center">กลางแมพ = 0,0</option><option value="corner">มุมซ้ายบน = 0,0</option></select></div>
+          <div><label>Height smoothing</label><select id="smoothMode"><option value="1">เบา</option><option value="2" selected>กลาง</option><option value="0">ปิด</option></select></div>
+          <div><label>วิเคราะห์ความสูง</label><select id="analysisMode"><option value="terrain">Terrain smart</option><option value="brightness">สว่าง = สูง</option><option value="inverse">มืด = สูง</option></select></div>
+          <div><label>ส่งออกเฉพาะช่อง</label><select id="exportScope"><option value="all">ทุกช่อง</option><option value="selected">เฉพาะช่องที่เลือก</option></select></div>
+          <div class="full"><label>ชื่อแมพ / Prompt</label><input id="exportMapName" type="text" value="Roblox Map Grid"></div>
+        </div>
+        <button id="generatePromptBtn" class="good">วิเคราะห์ภาพ + สร้าง AI Roblox Pack</button>
+        <div id="exportSummary" class="status">ยังไม่ได้วิเคราะห์</div>
+        <div class="previewCanvasBox"><canvas id="exportPreviewCanvas" width="1" height="1"></canvas></div>
+        <textarea id="promptPreview" class="exportPreview" readonly placeholder="กดวิเคราะห์ภาพก่อน"></textarea>
+        <div class="smallBtnRow">
+          <button id="downloadPromptBtn" class="secondary">AI Prompt .txt</button>
+          <button id="downloadJsonBtn" class="secondary">Data .json</button>
+        </div>
+        <div class="smallBtnRow">
+          <button id="downloadCsvBtn" class="secondary">Table .csv</button>
+          <button id="downloadLuaBtn" class="secondary">Studio Script .lua</button>
+        </div>
+        <button id="downloadHeightMapBtn" class="secondary">ดาวน์โหลดภาพ Preview Height/Biome PNG</button>
+        <div class="uxSectionTitle terrainImageTitle">Roblox Terrain Image Pack</div>
+        <div class="uxInlineHint terrainImageHint">ส่งออกภาพ 2 แบบสำหรับระบบสร้าง Terrain ด้วยภาพ: Color Map = ภาพสีจริง, Heightmap = ภาพขาวดำที่สีขาวคือสูง สีดำคือต่ำ</div>
+        <div class="smallBtnRow terrainImageExportRow">
+          <button id="downloadTerrainColorMapBtn" class="secondary" type="button">Color Map PNG</button>
+          <button id="downloadTerrainHeightmapBtn" class="secondary" type="button">Heightmap ขาวดำ PNG</button>
+        </div>
+        <button id="downloadTerrainImagePackBtn" class="good" type="button">ดาวน์โหลดคู่สำหรับ Terrain</button>
+        <div class="warningBox">หมายเหตุ: การเดาความสูงจากภาพ 2D เป็นการประเมินจากสี/ความสว่าง/น้ำ/ป่า/ทราย ไม่ใช่ข้อมูลภูมิประเทศจริง ควรใช้เป็น draft แล้วปรับมือใน Roblox Studio ต่อ</div>
       </div>
-    </aside>
-  </main>
+    </section>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-  <script>
+    <section class="page" data-page="share">
+      <div class="card">
+        <h2>โปรเจกต์ / ห้อง</h2>
+        <div id="projectStatus" class="status">ยังไม่ได้เชื่อมห้อง</div>
+        <button id="saveProjectBtn" class="good">เซฟโปรเจกต์ในเครื่อง</button>
+        <button id="copyProjectBtn" class="secondary">คัดลอกโปรเจกต์เป็นข้อความ</button>
+        <button id="backHomeBtn" class="secondary">กลับหน้าแรก</button>
+      </div>
+      <div class="card">
+        <h2>แชร์ด้วยลิงก์</h2>
+        <button id="copyShareLinkBtn" class="secondary">คัดลอกลิงก์โปรเจกต์</button>
+        <p class="hint">ลิงก์ใช้จริงเมื่อเว็บถูกโฮสต์ออนไลน์และต่อฐานข้อมูลกลาง</p>
+      </div>
+      <div class="card">
+        <h2>แชร์ด้วย Code</h2>
+        <label>อายุ Code</label>
+        <select id="codeExpireMode">
+          <option value="forever">ถาวร</option>
+          <option value="10m">10 นาที</option>
+          <option value="1h">1 ชั่วโมง</option>
+          <option value="24h">24 ชั่วโมง</option>
+        </select>
+        <button id="generateCodeBtn">สร้าง / รีโค้ดใหม่</button>
+        <button id="toggleCodeBtn" class="secondary">เปิด / ปิด Code</button>
+        <div id="shareCodeBox" class="status">ยังไม่มี Code</div>
+      </div>
+    </section>
+  </div>
+</aside>
+
+  </main>  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBH9clABBaRxRB-h_2lP2MvO6qO34nO-Jw",
       authDomain: "ratweb-26cd0.firebaseapp.com",
@@ -469,20 +957,33 @@
     };
 
     let db = null;
-    let auth = null; // ไม่ใช้ Firebase Auth แล้ว
     let currentUser = null;
+    let presenceTimer = null;
     let roomRef = null;
     let isApplyingRemote = false;
     let saveTimer = null;
     let roomStatus = { online: false, hostLastSeen: null };
     let shortcutStatusRefs = [];
-    let presenceTimer = null;
 
     let viewScale = 0.8;
     let panX = 0;
     let panY = 0;
     let activePointers = new Map();
     let pinchState = null;
+    let renderPending = false;
+    let miniMapEnabled = true;
+    let singlePanState = null;
+    let historyStack = [];
+    let redoStack = [];
+    const MAX_HISTORY = 24;
+    const LOD_SIZES = [96, 192, 384];
+    const LOD_MAX_JOBS_PER_IDLE = 3;
+    let lastRenderModeText = '';
+    let lodQueue = [];
+    let lodQueuedKeys = new Set();
+    let lodWorkerScheduled = false;
+    let lodStats = { queued: 0, done: 0, total: 0, visible: 0, mode: 'พร้อมใช้งาน' };
+    let lodStatusTimer = null;
 
     function initFirebase(){
       try {
@@ -492,9 +993,12 @@
         return true;
       } catch (err) {
         console.error('Firebase init error:', err);
-        alert('Firebase init error: ' + err.message);
         return false;
       }
+    }
+
+    function safeCode(code){
+      return String(code || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
     }
 
     initFirebase();
@@ -505,20 +1009,20 @@
     const workspace = document.getElementById('workspace');
     const sheet = document.getElementById('sheet');
     const backdrop = document.getElementById('sheetBackdrop');
+    const miniMap = document.getElementById('miniMap');
+    const miniMapCanvas = document.getElementById('miniMapCanvas');
+    const miniCtx = miniMapCanvas ? miniMapCanvas.getContext('2d') : null;
 
     const $ = id => document.getElementById(id);
     const els = {
-      homeScreen: $('homeScreen'), appMain: $('appMain'), authBox: $('authBox'), authEmail: $('authEmail'), authPassword: $('authPassword'), signInBtn: $('signInBtn'), registerBtn: $('registerBtn'), signOutBtn: $('signOutBtn'), authStatus: $('authStatus'), userStatus: $('userStatus'), projectHomeBox: $('projectHomeBox'),
-      projectNameInput: $('projectNameInput'), createProjectBtn: $('createProjectBtn'), joinCodeInput: $('joinCodeInput'), joinProjectBtn: $('joinProjectBtn'), loadCloudProjectBtn: $('loadCloudProjectBtn'), exportProjectFileBtn: $('exportProjectFileBtn'), importProjectFileInput: $('importProjectFileInput'),
-      shortcutNameInput: $('shortcutNameInput'), shortcutCodeInput: $('shortcutCodeInput'), addShortcutBtn: $('addShortcutBtn'), refreshShortcutBtn: $('refreshShortcutBtn'), roomShortcutList: $('roomShortcutList'),
+      homeScreen: $('homeScreen'), appMain: $('appMain'), authBox: $('authBox'), authEmail: $('authEmail'), authPassword: $('authPassword'), signInBtn: $('signInBtn'), registerBtn: $('registerBtn'), signOutBtn: $('signOutBtn'), authStatus: $('authStatus'), userStatus: $('userStatus'), projectHomeBox: $('projectHomeBox'), projectNameInput: $('projectNameInput'), createProjectBtn: $('createProjectBtn'), joinCodeInput: $('joinCodeInput'), joinProjectBtn: $('joinProjectBtn'), loadCloudProjectBtn: $('loadCloudProjectBtn'), exportProjectFileBtn: $('exportProjectFileBtn'), importProjectFileInput: $('importProjectFileInput'), shortcutNameInput: $('shortcutNameInput'), shortcutCodeInput: $('shortcutCodeInput'), addShortcutBtn: $('addShortcutBtn'), refreshShortcutBtn: $('refreshShortcutBtn'), roomShortcutList: $('roomShortcutList'),
       statusText: $('statusText'), openMenuBtn: $('openMenuBtn'), closeSheetBtn: $('closeSheetBtn'),
       selectToggleBtn: $('selectToggleBtn'), zoomInBtn: $('zoomInBtn'), zoomOutBtn: $('zoomOutBtn'),
-      cols: $('cols'), rows: $('rows'), cellW: $('cellW'), cellH: $('cellH'), buildBtn: $('buildBtn'), gridInfo: $('gridInfo'),
+      cols: $('cols'), rows: $('rows'), cellW: $('cellW'), cellH: $('cellH'), buildBtn: $('buildBtn'), gridInfo: $('gridInfo'), emptyCellPreset: $('emptyCellPreset'), emptyCellColor: $('emptyCellColor'), emptyPngMode: $('emptyPngMode'),
       mode: $('mode'), combineBox: $('combineBox'), splitBox: $('splitBox'), cellUpload: $('cellUpload'), fillSelectedBtn: $('fillSelectedBtn'), splitUpload: $('splitUpload'), splitBtn: $('splitBtn'),
-      selectionEnabled: $('selectionEnabled'), selectMode: $('selectMode'), selectLevel: $('selectLevel'), clearSelectionBtn: $('clearSelectionBtn'), deleteSelectedBtn: $('deleteSelectedBtn'),
+      selectionEnabled: $('selectionEnabled'), selectMode: $('selectMode'), selectLevel: $('selectLevel'), clearSelectionBtn: $('clearSelectionBtn'), deleteSelectedBtn: $('deleteSelectedBtn'), undoBtn: $('undoBtn'), redoBtn: $('redoBtn'), selectAllBtn: $('selectAllBtn'), toggleMiniMapBtn: $('toggleMiniMapBtn'),
       gridGlobalMode: $('gridGlobalMode'), showMajorGrid: $('showMajorGrid'), majorGridName: $('majorGridName'), majorColor: $('majorColor'), minorGridList: $('minorGridList'), addMinorGridBtn: $('addMinorGridBtn'),
-      zoom: $('zoom'), zoomText: $('zoomText'), exportGridMode: $('exportGridMode'), downloadAllBtn: $('downloadAllBtn'), downloadSelectedBtn: $('downloadSelectedBtn'), downloadProjectFileBtn: $('downloadProjectFileBtn'),
-      projectStatus: $('projectStatus'), saveProjectBtn: $('saveProjectBtn'), copyProjectBtn: $('copyProjectBtn'), backHomeBtn: $('backHomeBtn'), copyShareLinkBtn: $('copyShareLinkBtn'), codeExpireMode: $('codeExpireMode'), generateCodeBtn: $('generateCodeBtn'), toggleCodeBtn: $('toggleCodeBtn'), shareCodeBox: $('shareCodeBox')
+      zoom: $('zoom'), zoomText: $('zoomText'), exportGridMode: $('exportGridMode'), downloadAllBtn: $('downloadAllBtn'), downloadSelectedBtn: $('downloadSelectedBtn'), studsPerCell: $('studsPerCell'), maxHeightStuds: $('maxHeightStuds'), exportDetailMode: $('exportDetailMode'), exportSubdiv: $('exportSubdiv'), partThickness: $('partThickness'), analysisMode: $('analysisMode'), exportMapName: $('exportMapName'), generatePromptBtn: $('generatePromptBtn'), promptPreview: $('promptPreview'), downloadPromptBtn: $('downloadPromptBtn'), downloadJsonBtn: $('downloadJsonBtn'), downloadCsvBtn: $('downloadCsvBtn'), downloadLuaBtn: $('downloadLuaBtn'), downloadHeightMapBtn: $('downloadHeightMapBtn'), seaLevelStuds: $('seaLevelStuds'), originMode: $('originMode'), smoothMode: $('smoothMode'), exportScope: $('exportScope'), exportSummary: $('exportSummary'), exportPreviewCanvas: $('exportPreviewCanvas'), exportTabPrompt: $('exportTabPrompt'), exportTabData: $('exportTabData'), exportTabLua: $('exportTabLua'), projectStatus: $('projectStatus'), saveProjectBtn: $('saveProjectBtn'), copyProjectBtn: $('copyProjectBtn'), backHomeBtn: $('backHomeBtn'), copyShareLinkBtn: $('copyShareLinkBtn'), codeExpireMode: $('codeExpireMode'), generateCodeBtn: $('generateCodeBtn'), toggleCodeBtn: $('toggleCodeBtn'), shareCodeBox: $('shareCodeBox')
     };
 
     let currentProject = {
@@ -535,22 +1039,97 @@
     let state = {
       cols: 4, rows: 4, cellW: 160, cellH: 160,
       cells: [], selected: new Set(), dragStart: null,
+      // assets เก็บรูปจริงแค่ครั้งเดียว ส่วน cells จะอ้างอิงด้วย assetId
+      // แก้ปัญหา 10×10 แล้ว Firebase ไม่ส่งรูป เพราะรูปเดิมถูกยัดซ้ำ 100 รอบ
       assets: {},
+      emptyCellPreset: 'transparent',
+      emptyCellColor: '#5f9650',
+      emptyPngMode: 'transparent',
       minorGrids: [{ id: makeId(), name: 'ตารางย่อย 1', enabled: true, color: '#ff3333', spacing: 10, unit: 'px', subdiv: 2 }]
     };
 
-    function uid(){ return currentUser?.uid || null; }
+    function toast(message, type='info'){
+      const box = document.getElementById('toastContainer');
+      if(!box){ console.log(message); return; }
+      const el = document.createElement('div');
+      el.className = 'toastItem ' + type;
+      el.textContent = String(message || '');
+      box.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 220);
+      }, 2600);
+    }
+
+    function hasAnyImage(){
+      return state.cells && state.cells.some(row => row.some(Boolean));
+    }
+
+    function saveHistory(reason='edit'){
+      try {
+        const snapshot = JSON.stringify(getProjectData());
+        historyStack.push(snapshot);
+        if(historyStack.length > MAX_HISTORY) historyStack.shift();
+        redoStack = [];
+        updateHistoryButtons();
+      } catch(err){ console.warn('History save failed:', reason, err); }
+    }
+
+    async function restoreHistorySnapshot(snapshot){
+      if(!snapshot) return;
+      isApplyingRemote = true;
+      await loadProjectData(JSON.parse(snapshot));
+      isApplyingRemote = false;
+      markProjectChanged();
+      updateHistoryButtons();
+    }
+
+    async function undo(){
+      if(!historyStack.length) return toast('ยังไม่มีจุดให้ย้อนกลับ', 'warn');
+      redoStack.push(JSON.stringify(getProjectData()));
+      const snap = historyStack.pop();
+      await restoreHistorySnapshot(snap);
+      toast('ย้อนกลับแล้ว', 'success');
+    }
+
+    async function redo(){
+      if(!redoStack.length) return toast('ยังไม่มีจุดให้ทำซ้ำ', 'warn');
+      historyStack.push(JSON.stringify(getProjectData()));
+      const snap = redoStack.pop();
+      await restoreHistorySnapshot(snap);
+      toast('ทำซ้ำแล้ว', 'success');
+    }
+
+    function updateHistoryButtons(){
+      if(els.undoBtn) els.undoBtn.disabled = historyStack.length === 0;
+      if(els.redoBtn) els.redoBtn.disabled = redoStack.length === 0;
+    }
+
+    function requestRender(options = {}){
+      if(Object.keys(options).length){ render(options); return; }
+      if(renderPending) return;
+      renderPending = true;
+      requestAnimationFrame(() => {
+        renderPending = false;
+        render();
+      });
+    }
+
+
     function makeId(){ return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())); }
-    function safeCode(code){ return String(code || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, ''); }
     function clampInt(v,min,max){ v=parseInt(v,10); if(Number.isNaN(v)) v=min; return Math.max(min,Math.min(max,v)); }
     function pxFromUnit(v,u){ v=Number(v)||1; if(u==='mm') return v*3.7795275591; if(u==='cm') return v*37.795275591; return v; }
     function keyOf(c,r,sc=0,sr=0){ return `${c},${r},${sc},${sr}`; }
     function parseKey(k){ const [col,row,subCol,subRow]=k.split(',').map(Number); return {col,row,subCol,subRow}; }
-    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[x])); }
 
     function simpleHash(str){
       let h = 2166136261;
-      for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+      for(let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
       return (h >>> 0).toString(36);
     }
 
@@ -564,6 +1143,8 @@
     }
 
     function canvasToDataURL(canvas, quality = 0.72){
+      // JPEG เล็กกว่า PNG มาก เหมาะกับ Firebase Realtime Database
+      // ถ้าต้องการพื้นหลังโปร่งใสจริง ควรใช้ Firebase Storage แทน
       return canvas.toDataURL('image/jpeg', quality);
     }
 
@@ -577,21 +1158,128 @@
     }
 
     async function loadImageCompressed(file, maxSide = 900, quality = 0.72){
-      const raw = await new Promise((res, rej) => {
-        const img = new Image();
-        img.onload = () => res(img);
-        img.onerror = rej;
-        img.src = URL.createObjectURL(file);
-      });
+      const raw = await loadRawImageElement(file);
+
       const scale = Math.min(1, maxSide / Math.max(raw.width, raw.height));
       const w = Math.max(1, Math.round(raw.width * scale));
       const h = Math.max(1, Math.round(raw.height * scale));
       const off = document.createElement('canvas');
-      off.width = w; off.height = h;
-      const o = off.getContext('2d');
-      o.fillStyle = '#fff'; o.fillRect(0,0,w,h);
+      off.width = w;
+      off.height = h;
+      const o = off.getContext('2d', { alpha:false });
+      o.fillStyle = '#fff';
+      o.fillRect(0,0,w,h);
       o.drawImage(raw,0,0,w,h);
       return registerAssetFromDataURL(canvasToDataURL(off, quality));
+    }
+
+    function loadRawImageElement(file){
+      return new Promise((res, rej) => {
+        const img = new Image();
+        let objectUrl = null;
+        img.onload = () => { if(objectUrl) URL.revokeObjectURL(objectUrl); res(img); };
+        img.onerror = err => { if(objectUrl) URL.revokeObjectURL(objectUrl); rej(err); };
+        objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
+      });
+    }
+
+    function countFilledCells(){
+      if(!state?.cells?.length) return 0;
+      let n = 0;
+      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) if(state.cells?.[r]?.[c]) n++;
+      return n;
+    }
+
+    function resetLodForImage(img){
+      if(img && img._lodCache) img._lodCache = {};
+    }
+
+    function isCropRef(cell){
+      return cell && cell.kind === 'cropRef' && cell.image && cell.crop;
+    }
+
+    function makeCropRef(sourceImg, crop){
+      return {
+        kind: 'cropRef',
+        image: sourceImg,
+        assetId: sourceImg.assetId,
+        crop: { sx: crop.sx, sy: crop.sy, sw: crop.sw, sh: crop.sh },
+        width: crop.sw,
+        height: crop.sh,
+        _lodCache: {}
+      };
+    }
+
+    function clearAllLodQueues(){
+      lodQueue = [];
+      lodQueuedKeys.clear();
+      lodWorkerScheduled = false;
+      lodStats = { queued:0, done:0, total:0, visible:0, mode:'พร้อมใช้งาน' };
+      updateLodStatusPanel?.();
+    }
+
+    function waitFrame(){
+      return new Promise(resolve => requestAnimationFrame(resolve));
+    }
+
+
+
+    function uid(){ return currentUser?.uid || null; }
+    function normalizeUserName(name){
+      return String(name || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    }
+    function hashPassword(name, pass){
+      return simpleHash('grid_builder_v1|' + name + '|' + pass);
+    }
+    function validateLoginInput(){
+      const name = normalizeUserName(els.authEmail?.value);
+      const pass = els.authPassword?.value || '';
+      if(name.length < 4){ toast('ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัว และใช้ได้เฉพาะ a-z, 0-9, _ หรือ -', 'warn'); return null; }
+      if(pass.length < 6){ toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัว', 'warn'); return null; }
+      return { name, pass };
+    }
+    async function signInEmail(){
+      if(!initFirebase()) return toast('Firebase ยังไม่พร้อม', 'error');
+      const input = validateLoginInput();
+      if(!input) return;
+      try {
+        const snap = await db.ref('simpleUsers/' + input.name).get();
+        const data = snap.val();
+        if(!data) return toast('ไม่พบ ID นี้ ให้กด Register ก่อน', 'warn');
+        if(data.passHash !== hashPassword(input.name, input.pass)) return toast('รหัสผ่านผิด', 'error');
+        currentUser = { uid: 'user_' + input.name, email: input.name, name: input.name };
+        onAuthChanged(currentUser);
+        toast('ล็อกอินแล้ว', 'success');
+      } catch(e){ toast('Login ไม่สำเร็จ: ' + e.message, 'error'); }
+    }
+    async function registerEmail(){
+      if(!initFirebase()) return toast('Firebase ยังไม่พร้อม', 'error');
+      const input = validateLoginInput();
+      if(!input) return;
+      try {
+        const ref = db.ref('simpleUsers/' + input.name);
+        const snap = await ref.get();
+        if(snap.exists()) return toast('ID นี้มีคนใช้แล้ว', 'warn');
+        await ref.set({ name: input.name, passHash: hashPassword(input.name, input.pass), createdAt: firebase.database.ServerValue.TIMESTAMP });
+        currentUser = { uid: 'user_' + input.name, email: input.name, name: input.name };
+        onAuthChanged(currentUser);
+        toast('สมัครและล็อกอินแล้ว', 'success');
+      } catch(e){ toast('Register ไม่สำเร็จ: ' + e.message, 'error'); }
+    }
+    function onAuthChanged(user){
+      currentUser = user || null;
+      if(user){
+        els.authBox?.classList.add('hidden');
+        els.projectHomeBox?.classList.remove('hidden');
+        if(els.userStatus) els.userStatus.innerHTML = `ล็อกอินแล้ว<br>ID: ${escapeHtml(user.name || user.email || '-')}<br>UID: ${escapeHtml(user.uid)}`;
+        renderRoomShortcuts();
+      } else {
+        els.authBox?.classList.remove('hidden');
+        els.projectHomeBox?.classList.add('hidden');
+        if(els.authStatus) els.authStatus.textContent = 'ยังไม่ได้ล็อกอิน';
+        showHome();
+      }
     }
 
     function isViewMode(){ return els.selectionEnabled.value === 'off'; }
@@ -602,10 +1290,17 @@
       wrap.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${viewScale})`;
       els.zoom.value = Math.round(viewScale * 100);
       els.zoomText.textContent = `${Math.round(viewScale * 100)}%`;
+      updateMiniMap();
+
+      // สำคัญมากสำหรับแผนที่ใหญ่ 10x10 ช่องละ 1000px:
+      // ระบบวาดเฉพาะช่องที่เห็นบนจอ ดังนั้นทุกครั้งที่ pan/zoom ต้องสั่ง render ใหม่
+      // ไม่งั้น canvas จะยังมีพื้นที่ขาวจนกว่าจะซูมออกให้ทั้งแมพถูกวาดครั้งเดียว
+      requestRender();
     }
 
     function centerCanvas(){
-      const w = canvas.width * viewScale, h = canvas.height * viewScale;
+      const w = canvas.width * viewScale;
+      const h = canvas.height * viewScale;
       const rect = workspace.getBoundingClientRect();
       panX = Math.max(8, (rect.width - w) / 2);
       panY = Math.max(8, (rect.height - h) / 2);
@@ -626,20 +1321,37 @@
       applyCanvasTransform(true);
     }
 
-    function getDistance(a, b){ return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-    function getCenter(a, b){ return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
+    function getDistance(a, b){
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    function getCenter(a, b){
+      return {
+        x: (a.clientX + b.clientX) / 2,
+        y: (a.clientY + b.clientY) / 2
+      };
+    }
 
     function startPinch(){
       const pts = [...activePointers.values()];
       if(pts.length < 2 || !isViewMode()) return;
+
       wrap.classList.remove('smooth');
       const center = getCenter(pts[0], pts[1]);
       const workspaceRect = workspace.getBoundingClientRect();
+
       const localCenterX = center.x - workspaceRect.left;
       const localCenterY = center.y - workspaceRect.top;
+
       pinchState = {
         startDistance: Math.max(1, getDistance(pts[0], pts[1])),
+        startCenterX: localCenterX,
+        startCenterY: localCenterY,
         startScale: viewScale,
+        startPanX: panX,
+        startPanY: panY,
         focalX: (localCenterX - panX) / viewScale,
         focalY: (localCenterY - panY) / viewScale
       };
@@ -648,101 +1360,29 @@
     function updatePinch(){
       const pts = [...activePointers.values()];
       if(pts.length < 2 || !pinchState || !isViewMode()) return;
+
       const center = getCenter(pts[0], pts[1]);
       const workspaceRect = workspace.getBoundingClientRect();
       const localCenterX = center.x - workspaceRect.left;
       const localCenterY = center.y - workspaceRect.top;
       const distance = Math.max(1, getDistance(pts[0], pts[1]));
+
       const ratio = distance / pinchState.startDistance;
       viewScale = Math.max(0.1, Math.min(2.5, pinchState.startScale * ratio));
+
+      // สองนิ้วเลื่อนภาพได้ด้วยการเลื่อนจุดกึ่งกลางนิ้ว
+      // และซูมโดยยึดจุดกึ่งกลางนิ้วเป็นจุดอ้างอิง
       panX = localCenterX - pinchState.focalX * viewScale;
       panY = localCenterY - pinchState.focalY * viewScale;
+
       applyCanvasTransform(false);
     }
 
     function showApp(){ els.homeScreen.classList.add('hidden'); els.appMain.classList.remove('hidden'); updateProjectStatus(); setTimeout(centerCanvas, 60); }
     function showHome(){ els.appMain.classList.add('hidden'); els.homeScreen.classList.remove('hidden'); renderRoomShortcuts(); }
 
-    function normalizeUserName(name){
-      return String(name || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    }
-
-    function validateLoginInput(){
-      const name = normalizeUserName(els.authEmail.value);
-      const pass = els.authPassword.value || '';
-      if(name.length < 4){
-        alert('ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัว และใช้ได้เฉพาะ a-z, 0-9, _ หรือ -');
-        return null;
-      }
-      if(pass.length < 6){
-        alert('รหัสผ่านต้องมีอย่างน้อย 6 ตัว');
-        return null;
-      }
-      return { name, pass };
-    }
-
-    function hashPassword(name, pass){
-      return simpleHash('grid_builder_v1|' + name + '|' + pass);
-    }
-
-    async function signInEmail(){
-      if(!initFirebase()) return alert('Firebase ยังไม่พร้อม');
-      const input = validateLoginInput();
-      if(!input) return;
-
-      try {
-        const snap = await db.ref('simpleUsers/' + input.name).get();
-        const data = snap.val();
-        if(!data) return alert('ไม่พบ ID นี้ ให้กด Register ก่อน');
-        if(data.passHash !== hashPassword(input.name, input.pass)) return alert('รหัสผ่านผิด');
-
-        currentUser = { uid: 'user_' + input.name, email: input.name, name: input.name };
-        onAuthChanged(currentUser);
-      } catch(e){
-        alert('Login ไม่สำเร็จ: ' + e.message);
-      }
-    }
-
-    async function registerEmail(){
-      if(!initFirebase()) return alert('Firebase ยังไม่พร้อม');
-      const input = validateLoginInput();
-      if(!input) return;
-
-      try {
-        const ref = db.ref('simpleUsers/' + input.name);
-        const snap = await ref.get();
-        if(snap.exists()) return alert('ID นี้มีคนใช้แล้ว');
-
-        await ref.set({
-          name: input.name,
-          passHash: hashPassword(input.name, input.pass),
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        currentUser = { uid: 'user_' + input.name, email: input.name, name: input.name };
-        onAuthChanged(currentUser);
-      } catch(e){
-        alert('Register ไม่สำเร็จ: ' + e.message);
-      }
-    }
-
-    function onAuthChanged(user){
-      currentUser = user || null;
-      if(user){
-        els.authBox.classList.add('hidden');
-        els.projectHomeBox.classList.remove('hidden');
-        els.userStatus.innerHTML = `ล็อกอินแล้ว<br>ID: ${escapeHtml(user.name || user.email || '-')}<br>UID: ${escapeHtml(user.uid)}`;
-        renderRoomShortcuts();
-      } else {
-        els.authBox.classList.remove('hidden');
-        els.projectHomeBox.classList.add('hidden');
-        els.authStatus.textContent = 'ยังไม่ได้ล็อกอิน';
-        showHome();
-      }
-    }
-
     function createProject(name){
-      if(!currentUser) return alert('กรุณาล็อกอินก่อน');
+      if(!currentUser) return toast('กรุณาล็อกอินก่อน', 'warn');
       currentProject = {
         id:'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
         name:name||'Untitled Project',
@@ -764,17 +1404,25 @@
 
     function getProjectData(){
       const assets = {};
-      const images = state.cells.map(row => row.map(img => {
-        if(!img) return null;
-        const id = img.assetId || ('img_' + simpleHash(img.src) + '_' + img.src.length);
-        img.assetId = id;
-        assets[id] = state.assets?.[id] || img.src;
+      const images = state.cells.map(row => row.map(cell => {
+        if(!cell) return null;
+        if(isCropRef(cell)){
+          const id = cell.assetId || cell.image?.assetId;
+          if(id && state.assets?.[id]) assets[id] = state.assets[id];
+          return { kind:'cropRef', assetId:id, crop:cell.crop };
+        }
+        const id = cell.assetId || ('img_' + simpleHash(cell.src) + '_' + cell.src.length);
+        cell.assetId = id;
+        assets[id] = state.assets?.[id] || cell.src;
         return id;
       }));
       return {
         project: currentProject,
-        grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids },
-        assets, images, updatedAt:Date.now()
+        grid:{ cols:state.cols, rows:state.rows, cellW:state.cellW, cellH:state.cellH, minorGrids:state.minorGrids, emptyCellPreset:state.emptyCellPreset, emptyCellColor:state.emptyCellColor, emptyPngMode:state.emptyPngMode },
+        assets,
+        images,
+        updatedAt:Date.now(),
+        status: roomStatus
       };
     }
 
@@ -783,15 +1431,27 @@
       currentProject = data.project || currentProject;
       roomStatus = data.status || roomStatus || { online:false, hostLastSeen:null };
       state.cols=data.grid?.cols||4; state.rows=data.grid?.rows||4; state.cellW=data.grid?.cellW||160; state.cellH=data.grid?.cellH||160; state.minorGrids=data.grid?.minorGrids||state.minorGrids;
+      state.emptyCellPreset = data.grid?.emptyCellPreset || state.emptyCellPreset || 'transparent';
+      state.emptyCellColor = data.grid?.emptyCellColor || state.emptyCellColor || '#5f9650';
+      state.emptyPngMode = data.grid?.emptyPngMode || state.emptyPngMode || 'transparent';
       state.assets = data.assets || {};
       els.cols.value=state.cols; els.rows.value=state.rows; els.cellW.value=state.cellW; els.cellH.value=state.cellH;
+      if(els.emptyCellPreset) els.emptyCellPreset.value = state.emptyCellPreset;
+      if(els.emptyCellColor) els.emptyCellColor.value = state.emptyCellColor;
+      if(els.emptyPngMode) els.emptyPngMode.value = state.emptyPngMode;
       canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
       state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
+
       const images=data.images||[];
       const loadedAssets = {};
+
       if(data.assets){
         const ids = new Set();
-        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) if(images[r]?.[c]) ids.add(images[r][c]);
+        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
+          const item = images[r]?.[c];
+          const id = (item && typeof item === 'object') ? item.assetId : item;
+          if(id) ids.add(id);
+        }
         for(const id of ids){
           const src = data.assets[id];
           if(src){
@@ -800,8 +1460,13 @@
           }
         }
         for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
-          const id=images[r]?.[c];
-          if(id && loadedAssets[id]) state.cells[r][c]=loadedAssets[id];
+          const item=images[r]?.[c];
+          if(item && typeof item === 'object' && item.kind === 'cropRef'){
+            const img = loadedAssets[item.assetId];
+            if(img) state.cells[r][c]=makeCropRef(img, item.crop);
+          } else if(item && loadedAssets[item]) {
+            state.cells[r][c]=loadedAssets[item];
+          }
         }
       } else {
         for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
@@ -817,29 +1482,28 @@
           }
         }
       }
-      renderMinorGridList(); updateInfo(); updateProjectStatus(); render(); setTimeout(centerCanvas, 60);
+      renderMinorGridList(); updateInfo(); updateProjectStatus(); clearAllLodQueues(); lodStats.mode='กำลังเตรียมรายละเอียด'; render(); updateLodStatusPanel(); setTimeout(centerCanvas, 60);
     }
+
+    function saveProjectLocal(){ try { localStorage.setItem('imageGridProject:last', JSON.stringify(getProjectData())); } catch(err){ console.warn('local save skipped:', err); toast('โปรเจกต์ใหญ่เกิน localStorage แต่ยังใช้งานต่อได้', 'warn'); } updateProjectStatus(); }
 
     async function saveProjectCloudNow(){
       if(isApplyingRemote) return;
-      if(!initFirebase() || !currentProject.id || !currentUser) return;
+      if(!initFirebase() || !currentProject.id) return;
       currentProject.realtimeEnabled = true;
-      if(!currentProject.ownerUid) currentProject.ownerUid = uid();
+      if(currentUser && !currentProject.ownerUid) currentProject.ownerUid = uid();
       const data = getProjectData();
-
-      const roomData = JSON.parse(JSON.stringify(data));
-      delete roomData.status;
-
       try {
-        await db.ref('rooms/' + currentProject.id).update(roomData);
-        await db.ref('users/' + uid() + '/projects/' + currentProject.id).set({
-          id: currentProject.id,
-          name: currentProject.name,
-          updatedAt: firebase.database.ServerValue.TIMESTAMP,
-          owner: currentProject.owner === true
-        });
-        await db.ref('users/' + uid() + '/lastProjectId').set(currentProject.id);
-
+        await db.ref('rooms/' + currentProject.id).set(data);
+        if(currentUser){
+          await db.ref('users/' + uid() + '/projects/' + currentProject.id).set({
+            id: currentProject.id,
+            name: currentProject.name,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP,
+            owner: currentProject.owner === true
+          });
+          await db.ref('users/' + uid() + '/lastProjectId').set(currentProject.id);
+        }
         if(currentProject.shareCode){
           await db.ref('codes/' + safeCode(currentProject.shareCode)).set({
             projectId: currentProject.id,
@@ -848,35 +1512,21 @@
             updatedAt: firebase.database.ServerValue.TIMESTAMP
           });
         }
-
         if(currentProject.owner) startHostPresence();
       } catch(err) {
-        alert('บันทึกขึ้น Firebase ไม่สำเร็จ: ' + err.message);
+        toast('บันทึกขึ้น Firebase ไม่สำเร็จ: ' + err.message, 'error');
       }
       updateProjectStatus();
     }
 
     function queueCloudSave(){
       if(isApplyingRemote) return;
+      if(els.statusText) els.statusText.textContent = 'กำลังบันทึก...';
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveProjectCloudNow, 500);
-    }
-
-    async function loadLatestCloudProject(){
-      if(!currentUser) return alert('กรุณาล็อกอินก่อน');
-      const idSnap = await db.ref('users/' + uid() + '/lastProjectId').get();
-      const projectId = idSnap.val();
-      if(!projectId) return alert('บัญชีนี้ยังไม่มีโปรเจกต์บน Firebase');
-      const snap = await db.ref('rooms/' + projectId).get();
-      const data = snap.val();
-      if(!data) return alert('ไม่พบโปรเจกต์ล่าสุด');
-      await loadProjectData(data);
-      currentProject.id = projectId;
-      currentProject.owner = data.project?.ownerUid === uid() || data.project?.owner === true;
-      subscribeProject(projectId);
-      if(currentProject.owner) startHostPresence();
-      showApp();
-      openSheet('setup');
+      saveTimer = setTimeout(()=>{
+        saveProjectCloudNow();
+        if(els.statusText) els.statusText.textContent = 'บันทึกแล้ว';
+      }, 1800);
     }
 
     function subscribeProject(projectId){
@@ -890,9 +1540,9 @@
         await loadProjectData(data);
         currentProject.id = projectId;
         currentProject.realtimeEnabled = true;
-        currentProject.owner = data.project?.ownerUid === uid();
+        if(currentUser) currentProject.owner = data.project?.ownerUid === uid() || (data.project?.owner === true && !data.project?.ownerUid);
         isApplyingRemote = false;
-      }, err => alert('อ่านห้องจาก Firebase ไม่สำเร็จ: ' + err.message));
+      }, err => toast('อ่านห้องจาก Firebase ไม่สำเร็จ: ' + err.message, 'error'));
     }
 
     function setHostOnline(projectId, isOnline){
@@ -925,23 +1575,24 @@
     }
 
     async function joinByCode(code){
+      if(!currentUser) return toast('กรุณาล็อกอินก่อนเข้าร่วมโปรเจกต์', 'warn');
       const codeData = await resolveCode(code);
-      if(!codeData) return alert('ไม่พบ Code หรือ Code ถูกปิด');
+      if(!codeData) return toast('ไม่พบ Code หรือ Code ถูกปิด', 'warn');
       const roomSnap = await db.ref('rooms/' + codeData.projectId).get();
       const data = roomSnap.val();
-      if(!data) return alert('ไม่พบโปรเจกต์นี้');
+      if(!data) return toast('ไม่พบโปรเจกต์นี้', 'warn');
       if(!data.status || data.status.online !== true){
-        saveRoomShortcut(codeData.projectId, data.project?.name || 'Unnamed Project', codeData.code);
-        renderRoomShortcuts();
-        return alert('เซิร์ฟนี้ยังปิดอยู่ เจ้าของโปรเจกต์ต้องเปิดเว็บก่อนถึงจะเข้าร่วมได้');
+        await saveRoomShortcut(codeData.projectId, data.project?.name || 'Unnamed Project', codeData.code);
+        await renderRoomShortcuts();
+        return toast('เซิร์ฟนี้ยังปิดอยู่ เจ้าของโปรเจกต์ต้องเปิดเว็บก่อนถึงจะเข้าร่วมได้', 'warn');
       }
       await loadProjectData(data);
       currentProject.id = codeData.projectId;
       currentProject.owner = data.project?.ownerUid === uid();
       currentProject.realtimeEnabled = true;
-      saveRoomShortcut(currentProject.id, currentProject.name, codeData.code);
-      subscribeProject(currentProject.id);
+      await saveRoomShortcut(currentProject.id, currentProject.name, codeData.code);
       await db.ref('users/' + uid() + '/lastProjectId').set(currentProject.id);
+      subscribeProject(currentProject.id);
       showApp();
       openSheet('setup');
     }
@@ -978,8 +1629,9 @@
     }
 
     async function renderRoomShortcuts(){
-      if(!els.roomShortcutList || !currentUser) return;
+      if(!els.roomShortcutList) return;
       clearShortcutListeners();
+      if(!currentUser){ els.roomShortcutList.innerHTML = '<div class="status">กรุณาล็อกอินก่อน</div>'; return; }
       const list = await getRoomShortcuts();
       if(!list.length){
         els.roomShortcutList.innerHTML = '<div class="status">ยังไม่มีทางลัด</div>';
@@ -1027,17 +1679,66 @@
       shortcutStatusRefs.push({ ref, cb });
     }
 
+    async function loadLatestCloudProject(){
+      if(!currentUser) return toast('กรุณาล็อกอินก่อน', 'warn');
+      if(!initFirebase()) return toast('Firebase ยังไม่พร้อม', 'error');
+      const idSnap = await db.ref('users/' + uid() + '/lastProjectId').get();
+      const projectId = idSnap.val();
+      if(!projectId) return toast('บัญชีนี้ยังไม่มีโปรเจกต์บน Firebase', 'warn');
+      const snap = await db.ref('rooms/' + projectId).get();
+      const data = snap.val();
+      if(!data) return toast('ไม่พบโปรเจกต์ล่าสุด', 'warn');
+      await loadProjectData(data);
+      currentProject.id = projectId;
+      currentProject.owner = data.project?.ownerUid === uid() || data.project?.owner === true;
+      subscribeProject(projectId);
+      if(currentProject.owner) startHostPresence();
+      showApp();
+      openSheet('setup');
+    }
+
+    function loadProjectLocal(){ return loadLatestCloudProject(); }
+
+    function exportProjectFile(){
+      const data = JSON.stringify(getProjectData(), null, 2);
+      const blob = new Blob([data], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      download(url, (currentProject.name || 'image-grid-project') + '.json');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function importProjectFile(file){
+      if(!file) return;
+      if(!currentUser) return toast('กรุณาล็อกอินก่อนนำเข้าไฟล์', 'warn');
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        await loadProjectData(data);
+        currentProject.id = 'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+        currentProject.owner = true;
+        currentProject.ownerUid = uid();
+        currentProject.name = (currentProject.name || 'Imported Project') + ' Copy';
+        await saveProjectCloudNow();
+        subscribeProject(currentProject.id);
+        startHostPresence();
+        showApp();
+        openSheet('setup');
+        toast('นำเข้าและเซฟเป็นโปรเจกต์ใหม่แล้ว', 'success');
+      } catch(e) { toast('นำเข้าไฟล์ไม่สำเร็จ: ' + e.message, 'error'); }
+    }
+
     function makeShareCode(){ return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(); }
     function getExpireTime(mode){ if(mode==='forever') return null; if(mode==='10m') return Date.now()+10*60*1000; if(mode==='1h') return Date.now()+60*60*1000; if(mode==='24h') return Date.now()+24*60*60*1000; return null; }
 
     function generateCode(){
-      if(!currentProject.id) return alert('กรุณาสร้างโปรเจกต์ก่อน');
+      if(!currentProject.id) return toast('กรุณาสร้างโปรเจกต์ก่อน', 'warn');
       const oldCode = currentProject.shareCode;
       if(oldCode && initFirebase()) db.ref('codes/' + safeCode(oldCode)).remove().catch(()=>{});
       currentProject.shareCode=makeShareCode();
       currentProject.codeEnabled=true;
       currentProject.codeExpiresAt=getExpireTime(els.codeExpireMode.value);
       if(initFirebase()) currentProject.realtimeEnabled = true;
+      saveProjectLocal();
       saveProjectCloudNow();
       subscribeProject(currentProject.id);
       updateProjectStatus();
@@ -1047,10 +1748,16 @@
       if(!els.projectStatus) return;
       const expireText=currentProject.codeExpiresAt?new Date(currentProject.codeExpiresAt).toLocaleString():'ถาวร';
       els.projectStatus.innerHTML=`ชื่อ: ${escapeHtml(currentProject.name)}<br>ID: ${escapeHtml(currentProject.id||'-')}<br>Owner: ${currentProject.owner ? 'ใช่' : 'ไม่ใช่'}<br>Real-time: ${currentProject.realtimeEnabled?'เปิด':'ยังไม่ได้ต่อ Firebase'}`;
-      els.shareCodeBox.innerHTML=currentProject.shareCode?`Code: <b>${escapeHtml(currentProject.shareCode)}</b><br>สถานะ: ${currentProject.codeEnabled?'เปิด':'ปิด'}<br>หมดอายุ: ${expireText}`:'ยังไม่มี Code';
+      els.shareCodeBox.innerHTML=currentProject.shareCode?`Code: <b>${currentProject.shareCode}</b><br>สถานะ: ${currentProject.codeEnabled?'เปิด':'ปิด'}<br>หมดอายุ: ${expireText}`:'ยังไม่มี Code';
     }
 
-    function copyText(text){ navigator.clipboard?.writeText(text).then(()=>alert('คัดลอกแล้ว')).catch(()=>prompt('คัดลอกข้อความนี้', text)); }
+    function copyText(text){
+      navigator.clipboard?.writeText(text).then(()=>toast('คัดลอกแล้ว', 'success')).catch(()=>{
+        const ok = window.prompt('คัดลอกข้อความนี้', text);
+        if(ok !== null) toast('เปิดช่องคัดลอกสำรองแล้ว', 'info');
+      });
+    }
+
     function openSheet(tab='setup') { sheet.classList.add('open'); backdrop.classList.add('show'); setTab(tab); }
     function closeSheet() { sheet.classList.remove('open'); backdrop.classList.remove('show'); }
     function setTab(tab) {
@@ -1059,56 +1766,363 @@
       document.querySelectorAll('[data-page]').forEach(p=>p.classList.toggle('active', p.dataset.page===tab));
     }
 
+    function confirmBuildGrid(){
+      if(hasAnyImage() || state.selected.size){
+        if(!confirm('การสร้าง/รีเซ็ตตารางจะลบรูปและ selection ทั้งหมด ต้องการทำต่อไหม?')) return;
+      }
+      saveHistory('reset-grid');
+      buildGrid();
+      markProjectChanged();
+      toast('รีเซ็ตตารางแล้ว', 'success');
+    }
+
     function buildGrid(){
       state.cols=clampInt(els.cols.value,1,100); state.rows=clampInt(els.rows.value,1,100);
       state.cellW=clampInt(els.cellW.value,10,3000); state.cellH=clampInt(els.cellH.value,10,3000);
       canvas.width=state.cols*state.cellW; canvas.height=state.rows*state.cellH;
       state.cells=Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
       state.assets = {};
-      state.selected.clear(); updateInfo(); render(); setTimeout(centerCanvas, 60);
+      lodQueue=[]; lodQueuedKeys.clear(); lodStats={ queued:0, done:0, total:0, visible:0, mode:'พร้อมใช้งาน' };
+      state.selected.clear(); updateInfo(); render(); updateLodStatusPanel(); setTimeout(centerCanvas, 60);
     }
 
     function updateInfo(){
       const text = `${state.cols}×${state.rows} | ${canvas.width}×${canvas.height}px`;
       els.statusText.textContent = text;
-      els.gridInfo.innerHTML = `ตาราง: ${state.cols} × ${state.rows}<br>จำนวนช่อง: ${state.cols*state.rows}<br>ขนาดภาพรวม: ${canvas.width} × ${canvas.height}px`;
+      const empty = getEmptyCellPreset ? getEmptyCellPreset() : {label:'ช่องว่าง'};
+      els.gridInfo.innerHTML = `ตาราง: ${state.cols} × ${state.rows}<br>จำนวนช่อง: ${state.cols*state.rows}<br>ขนาดภาพรวม: ${canvas.width} × ${canvas.height}px<br>ช่องว่าง: ${empty.label} / ${empty.material || 'Air'}<br>Performance: เปิด LOD + วาดเฉพาะพื้นที่ที่เห็น`;
+    }
+
+    function getVisibleCellBounds(paddingCells = 1){
+      if(!workspace || !canvas.width || !canvas.height){
+        return { c0:0, r0:0, c1:state.cols-1, r1:state.rows-1 };
+      }
+      const wr = workspace.getBoundingClientRect();
+      const left = Math.max(0, -panX / viewScale);
+      const top = Math.max(0, -panY / viewScale);
+      const right = Math.min(canvas.width, left + wr.width / viewScale);
+      const bottom = Math.min(canvas.height, top + wr.height / viewScale);
+      return {
+        c0: Math.max(0, Math.floor(left / state.cellW) - paddingCells),
+        r0: Math.max(0, Math.floor(top / state.cellH) - paddingCells),
+        c1: Math.min(state.cols - 1, Math.ceil(right / state.cellW) + paddingCells),
+        r1: Math.min(state.rows - 1, Math.ceil(bottom / state.cellH) + paddingCells)
+      };
+    }
+
+    function getLodKey(img, size){
+      if(isCropRef(img)) return (img.assetId || 'crop') + ':' + Math.round(img.crop.sx) + ':' + Math.round(img.crop.sy) + ':' + size;
+      return (img?.assetId || img?.src || 'img') + ':' + size;
+    }
+
+    function createLodCanvasNow(img, size){
+      if(!img) return img;
+      if(isCropRef(img)){
+        const crop = img.crop;
+        const scale = Math.min(1, size / Math.max(crop.sw, crop.sh));
+        if(scale >= 0.98) return img;
+        const w = Math.max(1, Math.round(crop.sw * scale));
+        const h = Math.max(1, Math.round(crop.sh * scale));
+        const off = document.createElement('canvas');
+        off.width = w;
+        off.height = h;
+        const o = off.getContext('2d', { alpha:false });
+        o.imageSmoothingEnabled = true;
+        o.imageSmoothingQuality = 'low';
+        o.drawImage(img.image, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, w, h);
+        return off;
+      }
+      if(!img.width || !img.height) return img;
+      const scale = Math.min(1, size / Math.max(img.width, img.height));
+      if(scale >= 0.98) return img;
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const off = document.createElement('canvas');
+      off.width = w;
+      off.height = h;
+      const o = off.getContext('2d', { alpha:false });
+      o.imageSmoothingEnabled = true;
+      o.imageSmoothingQuality = 'low';
+      o.drawImage(img, 0, 0, w, h);
+      return off;
+    }
+
+    function queueLodBuild(img, size, priority = 5){
+      if(!img || (!isCropRef(img) && (!img.width || !img.height))) return;
+      if(!img._lodCache) img._lodCache = {};
+      if(img._lodCache[size]) return;
+      const key = getLodKey(img, size);
+      if(lodQueuedKeys.has(key)) return;
+      lodQueuedKeys.add(key);
+      lodQueue.push({ img, size, key, priority, t: Date.now() });
+      lodQueue.sort((a,b) => a.priority - b.priority || a.t - b.t);
+      lodStats.queued = lodQueue.length;
+      lodStats.total = Math.max(lodStats.total, lodStats.done + lodQueue.length);
+      lodStats.mode = 'กำลังสร้างภาพย่อ';
+      updateLodStatusPanel();
+      scheduleLodWorker();
+    }
+
+    function scheduleLodWorker(){
+      if(lodWorkerScheduled) return;
+      lodWorkerScheduled = true;
+      const run = deadline => processLodQueue(deadline);
+      if('requestIdleCallback' in window){
+        requestIdleCallback(run, { timeout: 500 });
+      } else {
+        setTimeout(() => run({ timeRemaining: () => 8, didTimeout: true }), 24);
+      }
+    }
+
+    function processLodQueue(deadline){
+      lodWorkerScheduled = false;
+      let jobs = 0;
+      while(lodQueue.length && jobs < LOD_MAX_JOBS_PER_IDLE && (deadline.didTimeout || deadline.timeRemaining() > 4)){
+        const job = lodQueue.shift();
+        lodQueuedKeys.delete(job.key);
+        if(job.img && !job.img._lodCache?.[job.size]){
+          if(!job.img._lodCache) job.img._lodCache = {};
+          job.img._lodCache[job.size] = createLodCanvasNow(job.img, job.size);
+          lodStats.done++;
+          jobs++;
+        }
+      }
+      lodStats.queued = lodQueue.length;
+      lodStats.mode = lodQueue.length ? 'กำลังโหลดรายละเอียด' : 'โหลดรายละเอียดเสร็จแล้ว';
+      updateLodStatusPanel();
+      if(jobs > 0) requestRender();
+      if(lodQueue.length) scheduleLodWorker();
+      else {
+        clearTimeout(lodStatusTimer);
+        lodStatusTimer = setTimeout(updateLodStatusPanel, 450);
+      }
+    }
+
+    function desiredLodSizeForZoom(worldW, worldH){
+      const screenSize = Math.max(worldW, worldH) * viewScale;
+      if(screenSize < 160) return 96;
+      if(screenSize < 380) return 192;
+      if(screenSize < 760) return 384;
+      return 0;
+    }
+
+    function chooseImageForZoom(img, worldW, worldH, forceFull = false, priority = 5){
+      if(forceFull || !img) return img;
+      const size = desiredLodSizeForZoom(worldW, worldH);
+      if(!size) return img;
+      if(!img._lodCache) img._lodCache = {};
+      if(img._lodCache[size]) return img._lodCache[size];
+      queueLodBuild(img, size, priority);
+      // ให้ภาพขึ้นทันทีด้วยภาพจริงก่อน แล้วค่อยเปลี่ยนเป็นภาพย่อเมื่อ cache พร้อม
+      return img;
+    }
+
+    function prewarmVisibleLods(bounds){
+      if(!bounds || !state?.cells?.length) return;
+      const size = desiredLodSizeForZoom(state.cellW, state.cellH);
+      if(!size) return;
+      let queuedNow = 0;
+      for(let r=bounds.r0; r<=bounds.r1; r++){
+        for(let c=bounds.c0; c<=bounds.c1; c++){
+          const img = state.cells?.[r]?.[c];
+          if(!img) continue;
+          queueLodBuild(img, size, Math.abs(r - bounds.r0) + Math.abs(c - bounds.c0));
+          queuedNow++;
+        }
+      }
+      lodStats.visible = Math.max(0, (bounds.c1-bounds.c0+1) * (bounds.r1-bounds.r0+1));
+      if(queuedNow) updateLodStatusPanel();
+    }
+
+    function updateLodStatusPanel(){
+      const panel = document.getElementById('lodStatusPanel');
+      if(!panel) return;
+      const title = document.getElementById('lodStatusTitle');
+      const percent = document.getElementById('lodPercent');
+      const fill = document.getElementById('lodBarFill');
+      const queueText = document.getElementById('lodQueueText');
+      const modeText = document.getElementById('lodModeText');
+      const visibleText = document.getElementById('lodVisibleText');
+      const explicitTotal = Number(lodStats.total) || 0;
+      const busy = lodQueue.length > 0 || (explicitTotal > 0 && lodStats.done < explicitTotal);
+      const total = explicitTotal > 0 ? explicitTotal : Math.max(1, lodStats.done + lodQueue.length);
+      const done = busy ? Math.min(lodStats.done, total) : total;
+      const pct = busy ? Math.round((done / total) * 100) : 100;
+      panel.classList.toggle('loading', busy);
+      panel.classList.toggle('error', false);
+      if(title) title.textContent = busy ? 'กำลังโหลดรายละเอียด' : 'โหลดรายละเอียดเสร็จแล้ว';
+      if(percent) percent.textContent = pct + '%';
+      if(fill) fill.style.width = pct + '%';
+      if(queueText) queueText.textContent = 'คิว: ' + lodQueue.length + ' งาน';
+      if(modeText) modeText.textContent = 'โหมด: ' + (lodStats.mode || 'พร้อมใช้งาน');
+      if(visibleText) visibleText.textContent = 'ช่องที่เห็น: ' + (lodStats.visible || '-');
     }
 
     function render(options = {}){
       const showSelection = options.showSelection ?? true;
       const showGrid = options.showGrid ?? true;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) if(state.cells[r][c]) drawCover(ctx,state.cells[r][c],c*state.cellW,r*state.cellH,state.cellW,state.cellH);
+      const fullRender = options.fullRender === true;
+      const emptyMode = options.emptyMode || 'editor';
+      const forceFullImages = options.forceFullImages === true || fullRender;
+
+      const b = fullRender
+        ? { c0:0, r0:0, c1:state.cols-1, r1:state.rows-1 }
+        : getVisibleCellBounds(3);
+
+      // Full render ใช้ตอน export/download เท่านั้น จึงล้างทั้งผืนได้
+      // Normal render ล้างเฉพาะ viewport + padding เพื่อไม่ให้ช่องที่เคยโหลดแล้วหายเป็นสีขาว
+      if(fullRender){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+      } else {
+        const x0 = Math.max(0, b.c0 * state.cellW);
+        const y0 = Math.max(0, b.r0 * state.cellH);
+        const x1 = Math.min(canvas.width, (b.c1 + 1) * state.cellW);
+        const y1 = Math.min(canvas.height, (b.r1 + 1) * state.cellH);
+        ctx.clearRect(x0, y0, x1 - x0, y1 - y0);
+      }
+
+      let visibleWithImages = 0;
+      for(let r=b.r0;r<=b.r1;r++){
+        for(let c=b.c0;c<=b.c1;c++){
+          const img = state.cells?.[r]?.[c];
+          if(!img){
+            drawEmptyCell(ctx, c*state.cellW, r*state.cellH, state.cellW, state.cellH, emptyMode);
+            continue;
+          }
+          visibleWithImages++;
+          const priority = Math.abs(c - Math.floor((b.c0+b.c1)/2)) + Math.abs(r - Math.floor((b.r0+b.r1)/2));
+          const drawImg = chooseImageForZoom(img, state.cellW, state.cellH, forceFullImages, priority);
+          drawCover(ctx, drawImg, c*state.cellW, r*state.cellH, state.cellW, state.cellH);
+        }
+      }
+      lodStats.visible = visibleWithImages;
+      if(!fullRender) prewarmVisibleLods(b);
       if(showSelection && els.selectionEnabled.value==='on') drawSelection();
-      if(showGrid) drawGridOverlay();
+      if(showGrid) drawGridOverlay(fullRender ? null : b);
+      updateMiniMap();
+      updateLodStatusPanel();
+
+      if(!fullRender && els.statusText){
+        const lodName = viewScale < .18 ? 'LOD ต่ำ' : viewScale < .55 ? 'LOD กลาง' : 'LOD สูง';
+        const loadingText = lodQueue.length ? ` | กำลังโหลด ${lodQueue.length}` : ' | พร้อม';
+        const modeText = `${state.cols}×${state.rows} | ${canvas.width}×${canvas.height}px | ${lodName}${loadingText}`;
+        if(lastRenderModeText !== modeText){
+          lastRenderModeText = modeText;
+          els.statusText.textContent = modeText;
+        }
+      }
+    }
+
+    function updateMiniMap(){
+      if(!miniMap || !miniCtx || !miniMapEnabled || !canvas.width || !canvas.height || !state?.cells?.length) return;
+      miniMap.classList.add('show');
+
+      const mw = miniMapCanvas.width;
+      const mh = miniMapCanvas.height;
+      miniCtx.clearRect(0, 0, mw, mh);
+      miniCtx.fillStyle = '#ffffff';
+      miniCtx.fillRect(0, 0, mw, mh);
+
+      const scale = Math.min(mw / canvas.width, mh / canvas.height);
+      const dw = canvas.width * scale;
+      const dh = canvas.height * scale;
+      const dx = (mw - dw) / 2;
+      const dy = (mh - dh) / 2;
+
+      // สำคัญ: ห้ามดึงภาพจาก canvas หลักโดยตรง เพราะบางจังหวะ canvas หลักถูกวาดแบบ export/restore
+      // ให้สร้างภาพย่อจาก state.cells เองเสมอ มินิแมพจึงไม่กลายเป็นพื้นขาวหลังใส่รูป
+      miniCtx.save();
+      miniCtx.beginPath();
+      miniCtx.rect(dx, dy, dw, dh);
+      miniCtx.clip();
+      for(let r = 0; r < state.rows; r++){
+        for(let c = 0; c < state.cols; c++){
+          const img = state.cells?.[r]?.[c];
+          if(!img){
+            drawEmptyCell(miniCtx, dx + c * state.cellW * scale, dy + r * state.cellH * scale, state.cellW * scale, state.cellH * scale, 'editor');
+            continue;
+          }
+          drawCover(
+            miniCtx,
+            img,
+            dx + c * state.cellW * scale,
+            dy + r * state.cellH * scale,
+            state.cellW * scale,
+            state.cellH * scale
+          );
+        }
+      }
+      miniCtx.restore();
+
+      miniCtx.save();
+      miniCtx.strokeStyle = 'rgba(0,0,0,.55)';
+      miniCtx.lineWidth = 1;
+      for(let c = 0; c <= state.cols; c++){
+        const x = dx + c * state.cellW * scale;
+        miniCtx.beginPath();
+        miniCtx.moveTo(x, dy);
+        miniCtx.lineTo(x, dy + dh);
+        miniCtx.stroke();
+      }
+      for(let r = 0; r <= state.rows; r++){
+        const y = dy + r * state.cellH * scale;
+        miniCtx.beginPath();
+        miniCtx.moveTo(dx, y);
+        miniCtx.lineTo(dx + dw, y);
+        miniCtx.stroke();
+      }
+      miniCtx.restore();
+
+      const wr = workspace.getBoundingClientRect();
+      const viewX = Math.max(0, -panX / viewScale);
+      const viewY = Math.max(0, -panY / viewScale);
+      const viewW = Math.min(canvas.width, wr.width / viewScale);
+      const viewH = Math.min(canvas.height, wr.height / viewScale);
+      miniCtx.save();
+      miniCtx.strokeStyle = '#2d64ff';
+      miniCtx.lineWidth = 3;
+      miniCtx.strokeRect(dx + viewX * scale, dy + viewY * scale, viewW * scale, viewH * scale);
+      miniCtx.restore();
     }
 
     function drawCover(target,img,x,y,w,h){
+      if(!img) return;
+      if(isCropRef(img)){
+        const crop = img.crop;
+        target.drawImage(img.image, crop.sx, crop.sy, crop.sw, crop.sh, x, y, w, h);
+        return;
+      }
       const scale=Math.max(w/img.width,h/img.height), sw=w/scale, sh=h/scale, sx=(img.width-sw)/2, sy=(img.height-sh)/2;
       target.drawImage(img,sx,sy,sw,sh,x,y,w,h);
     }
     function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
-    function drawGridOverlay(){
+    function drawGridOverlay(bounds = null){
       const mode=els.gridGlobalMode.value; if(mode==='none') return;
+      const b = bounds || { c0:0, r0:0, c1:state.cols-1, r1:state.rows-1 };
+      const xStart = b.c0 * state.cellW;
+      const yStart = b.r0 * state.cellH;
+      const xEnd = Math.min(canvas.width, (b.c1 + 1) * state.cellW);
+      const yEnd = Math.min(canvas.height, (b.r1 + 1) * state.cellH);
       ctx.save(); ctx.lineWidth=1;
       for(const g of state.minorGrids){
         if(!(mode==='all'||g.enabled)) continue;
         const spacing=pxFromUnit(g.spacing,g.unit); const subdiv=clampInt(g.subdiv,1,50);
         ctx.strokeStyle=g.color; ctx.globalAlpha=.5;
-        for(let x=spacing;x<canvas.width;x+=spacing) line(x,0,x,canvas.height);
-        for(let y=spacing;y<canvas.height;y+=spacing) line(0,y,canvas.width,y);
+        const firstX = Math.max(spacing, Math.floor(xStart / spacing) * spacing);
+        const firstY = Math.max(spacing, Math.floor(yStart / spacing) * spacing);
+        for(let x=firstX;x<xEnd;x+=spacing) line(x,yStart,x,yEnd);
+        for(let y=firstY;y<yEnd;y+=spacing) line(xStart,y,xEnd,y);
         ctx.globalAlpha=.8;
-        for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++) for(let i=1;i<subdiv;i++){
+        for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++) for(let i=1;i<subdiv;i++){
           const x=c*state.cellW+(state.cellW/subdiv)*i, y=r*state.cellH+(state.cellH/subdiv)*i;
           line(x,r*state.cellH,x,(r+1)*state.cellH); line(c*state.cellW,y,(c+1)*state.cellW,y);
         }
       }
       if(mode==='all'||els.showMajorGrid.value==='yes'){
         ctx.globalAlpha=1; ctx.lineWidth=2; ctx.strokeStyle=els.majorColor.value;
-        for(let c=0;c<=state.cols;c++) line(c*state.cellW,0,c*state.cellW,canvas.height);
-        for(let r=0;r<=state.rows;r++) line(0,r*state.cellH,canvas.width,r*state.cellH);
+        for(let c=b.c0;c<=b.c1+1;c++) line(c*state.cellW,yStart,c*state.cellW,yEnd);
+        for(let r=b.r0;r<=b.r1+1;r++) line(xStart,r*state.cellH,xEnd,r*state.cellH);
       }
       ctx.restore();
     }
@@ -1139,92 +2153,767 @@
       render();
     }
 
-    function loadImage(file){ return loadImageCompressed(file, 900, 0.72); }
-    function markProjectChanged(){ queueCloudSave(); }
+    function loadImage(file){ return loadImageCompressed(file, 1600, 0.78); }
+    function markProjectChanged(){ saveProjectLocal(); queueCloudSave(); }
 
     async function fillSelected(){
-      const file=els.cellUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน'); if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
-      const img=await loadImage(file); if(!img) return alert('อ่านรูปไม่สำเร็จ');
-      for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; }
-      render(); markProjectChanged();
+      const file=els.cellUpload.files[0]; if(!file) return toast('กรุณาเลือกรูปก่อน', 'warn'); if(!state.selected.size) return toast('กรุณาเลือกพื้นที่ก่อน', 'warn');
+      saveHistory('fill-selected');
+      const img=await loadImage(file); if(!img) return toast('อ่านรูปไม่สำเร็จ', 'error'); resetLodForImage(img); for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=img; } render(); markProjectChanged(); toast('ใส่รูปลงช่องที่เลือกแล้ว', 'success');
     }
 
     async function splitImage(){
-      const file=els.splitUpload.files[0]; if(!file) return alert('กรุณาเลือกรูปก่อน');
-      const img=await loadImage(file); if(!img) return alert('อ่านรูปไม่สำเร็จ');
-      const pw=img.width/state.cols, ph=img.height/state.rows;
-      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
-        const off=document.createElement('canvas'); off.width=state.cellW; off.height=state.cellH;
-        const o=off.getContext('2d'); o.drawImage(img,c*pw,r*ph,pw,ph,0,0,state.cellW,state.cellH);
-        const piece = await registerAssetFromDataURL(canvasToDataURL(off, 0.72));
-        if(piece) state.cells[r][c]=piece;
+      const file = els.splitUpload.files[0];
+      if(!file) return toast('กรุณาเลือกรูปก่อน', 'warn');
+      saveHistory('split-image');
+
+      try {
+        const total = state.cols * state.rows;
+        lodStats = { queued:0, done:0, total, visible:0, mode:'กำลังเตรียมภาพต้นฉบับ' };
+        updateLodStatusPanel();
+
+        const raw = await loadRawImageElement(file);
+        const maxSourceSide = 4096; // จุดสำคัญ: เก็บภาพต้นทางภาพเดียว ไม่แตกเป็น 100 ภาพ 1000px
+        const sourceScale = Math.min(1, maxSourceSide / Math.max(raw.width, raw.height));
+        const sw0 = Math.max(1, Math.round(raw.width * sourceScale));
+        const sh0 = Math.max(1, Math.round(raw.height * sourceScale));
+        const sourceCanvas = document.createElement('canvas');
+        sourceCanvas.width = sw0;
+        sourceCanvas.height = sh0;
+        const so = sourceCanvas.getContext('2d', { alpha:false });
+        so.imageSmoothingEnabled = true;
+        so.imageSmoothingQuality = 'high';
+        so.fillStyle = '#fff';
+        so.fillRect(0,0,sw0,sh0);
+        so.drawImage(raw, 0, 0, sw0, sh0);
+        await waitFrame();
+
+        const sourceImg = await registerAssetFromDataURL(canvasToDataURL(sourceCanvas, 0.76));
+        if(!sourceImg) throw new Error('สร้างภาพต้นทางไม่สำเร็จ');
+
+        const virtualW = state.cols * state.cellW;
+        const virtualH = state.rows * state.cellH;
+        const coverScale = Math.max(virtualW / sourceImg.width, virtualH / sourceImg.height);
+        const cropTotalW = virtualW / coverScale;
+        const cropTotalH = virtualH / coverScale;
+        const cropX0 = (sourceImg.width - cropTotalW) / 2;
+        const cropY0 = (sourceImg.height - cropTotalH) / 2;
+
+        state.cells = Array.from({length:state.rows},()=>Array.from({length:state.cols},()=>null));
+        state.assets = { [sourceImg.assetId]: state.assets[sourceImg.assetId] };
+        clearAllLodQueues();
+
+        let done = 0;
+        for(let r=0; r<state.rows; r++){
+          for(let c=0; c<state.cols; c++){
+            const crop = {
+              sx: cropX0 + (c * state.cellW) / coverScale,
+              sy: cropY0 + (r * state.cellH) / coverScale,
+              sw: state.cellW / coverScale,
+              sh: state.cellH / coverScale
+            };
+            state.cells[r][c] = makeCropRef(sourceImg, crop);
+            done++;
+            lodStats.done = done;
+            lodStats.total = total;
+            lodStats.mode = 'กำลังจัดสรรช่องแบบประหยัดหน่วยความจำ';
+            if(done % 20 === 0){ updateLodStatusPanel(); await waitFrame(); }
+          }
+        }
+
+        const filled = countFilledCells();
+        lodStats.done = 0;
+        lodStats.total = 0;
+        lodStats.queued = 0;
+        lodStats.mode = `โหมดประหยัดหน่วยความจำ: ${filled}/${total} ช่อง`;
+        render();
+        // วาดซ้ำอีกเฟรมหลัง browser จัด layout เสร็จ เพื่อให้ viewport ปัจจุบันโหลดครบโดยไม่ต้องซูมออก
+        requestRender();
+        markProjectChanged();
+        updateLodStatusPanel();
+        toast(`แยกภาพแบบ Virtual Tile แล้ว ${filled}/${total} ช่อง`, 'success');
+      } catch(err){
+        console.error(err);
+        toast('แยกภาพไม่สำเร็จ: ' + (err.message || err), 'error');
       }
-      render(); markProjectChanged();
     }
 
-    function deleteSelected(){ for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=null; } state.selected.clear(); render(); markProjectChanged(); }
+    function deleteSelected(){
+      if(!state.selected.size) return toast('ยังไม่ได้เลือกพื้นที่', 'warn');
+      saveHistory('delete-selected');
+      for(const k of state.selected){ const p=parseKey(k); state.cells[p.row][p.col]=null; }
+      state.selected.clear(); render(); markProjectChanged(); toast('ลบพื้นที่ที่เลือกแล้ว', 'success');
+    }
     function download(data,name){ const a=document.createElement('a'); a.href=data; a.download=name; a.click(); }
 
     function downloadAll(){
       const oldImage = ctx.getImageData(0,0,canvas.width,canvas.height);
       const includeGrid = els.exportGridMode.value === 'with';
-      render({ showSelection:false, showGrid:includeGrid });
+      const mode = els.emptyPngMode?.value || state.emptyPngMode || 'transparent';
+      const emptyMode = mode === 'white' ? 'download-white' : mode === 'material' ? 'download-material' : 'download-transparent';
+      render({ showSelection:false, showGrid:includeGrid, fullRender:true, forceFullImages:true, emptyMode });
       canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
         download(url,'image-grid-builder.png');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        ctx.putImageData(oldImage,0,0); render();
+        ctx.putImageData(oldImage,0,0);
+        render();
       }, 'image/png');
     }
 
     function downloadSelected(){
-      if(!state.selected.size) return alert('กรุณาเลือกพื้นที่ก่อน');
+      if(!state.selected.size) return toast('กรุณาเลือกพื้นที่ก่อน', 'warn');
       const oldImage = ctx.getImageData(0,0,canvas.width,canvas.height);
       const includeGrid = els.exportGridMode.value === 'with';
-      render({ showSelection:false, showGrid:includeGrid });
+      const mode = els.emptyPngMode?.value || state.emptyPngMode || 'transparent';
+      const emptyMode = mode === 'white' ? 'download-white' : mode === 'material' ? 'download-material' : 'download-transparent';
+      render({ showSelection:false, showGrid:includeGrid, fullRender:true, forceFullImages:true, emptyMode });
       const rs=[...state.selected].map(rectFromKey), minX=Math.min(...rs.map(r=>r.x)), minY=Math.min(...rs.map(r=>r.y)), maxX=Math.max(...rs.map(r=>r.x+r.w)), maxY=Math.max(...rs.map(r=>r.y+r.h));
       const off=document.createElement('canvas'); off.width=maxX-minX; off.height=maxY-minY; off.getContext('2d').drawImage(canvas,minX,minY,off.width,off.height,0,0,off.width,off.height);
       off.toBlob(blob => {
         const url = URL.createObjectURL(blob);
         download(url,'selected-grid-area.png');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        ctx.putImageData(oldImage,0,0); render();
+        ctx.putImageData(oldImage,0,0);
+        render();
       }, 'image/png');
     }
 
-    function exportProjectFile(){
-      const data = JSON.stringify(getProjectData(), null, 2);
-      const blob = new Blob([data], {type:'application/json'});
+
+    let lastExportPack = null;
+    let exportViewMode = 'prompt';
+
+    function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    function hex2(n){ return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2,'0'); }
+    function rgbToHex(r,g,b){ return '#' + hex2(r) + hex2(g) + hex2(b); }
+    function downloadTextFile(text, name, type='text/plain'){
+      const blob = new Blob([text], {type});
       const url = URL.createObjectURL(blob);
-      download(url, (currentProject.name || 'image-grid-project') + '.json');
+      download(url, name);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
+    function safeFileName(s){ return String(s||'map').trim().replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_') || 'map'; }
 
-    async function importProjectFile(file){
-      if(!file) return;
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-        await loadProjectData(data);
-        currentProject.id = 'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-        currentProject.owner = true;
-        currentProject.ownerUid = uid();
-        currentProject.name = (currentProject.name || 'Imported Project') + ' Copy';
-        await saveProjectCloudNow();
-        subscribeProject(currentProject.id);
-        startHostPresence();
-        showApp();
-        openSheet('setup');
-      } catch(e) {
-        alert('นำเข้าไฟล์ไม่สำเร็จ: ' + e.message);
+    const EMPTY_CELL_PRESETS = {
+      transparent:{ label:'ช่องว่าง', biome:'empty', biomeTH:'ช่องว่าง', material:'Air', color:'#ffffff', height01:0, waterScore:0, forestScore:0, sandScore:0, rockScore:0 },
+      grass:{ label:'Grass', biome:'plain', biomeTH:'ที่ราบ', material:'Grass', color:'#5f9650', height01:0.22, waterScore:0, forestScore:0.72, sandScore:0.12, rockScore:0.08 },
+      sand:{ label:'Sand', biome:'beach', biomeTH:'ชายหาด', material:'Sand', color:'#d2b978', height01:0.12, waterScore:0, forestScore:0.08, sandScore:0.82, rockScore:0.06 },
+      water:{ label:'Water', biome:'shallow_water', biomeTH:'น้ำตื้น', material:'Water', color:'#28aab4', height01:0.05, waterScore:0.88, forestScore:0, sandScore:0.08, rockScore:0 },
+      rock:{ label:'Rock', biome:'rock_mountain', biomeTH:'ภูเขาหิน', material:'Rock', color:'#5f5f5f', height01:0.70, waterScore:0, forestScore:0.08, sandScore:0.04, rockScore:0.85 },
+      ground:{ label:'Ground', biome:'dry_plain', biomeTH:'ที่ราบแห้ง', material:'Ground', color:'#8a6f45', height01:0.20, waterScore:0, forestScore:0.18, sandScore:0.36, rockScore:0.22 },
+      snow:{ label:'Snow', biome:'highland', biomeTH:'ที่สูง', material:'Snow', color:'#e7edf2', height01:0.55, waterScore:0, forestScore:0.03, sandScore:0.08, rockScore:0.20 },
+      custom:{ label:'Custom', biome:'custom', biomeTH:'กำหนดเอง', material:'Ground', color:'#5f9650', height01:0.20, waterScore:0, forestScore:0.20, sandScore:0.20, rockScore:0.20 }
+    };
+
+    function hexToRgb(hex){
+      const s = String(hex || '#ffffff').replace('#','');
+      const n = parseInt(s.length === 3 ? s.split('').map(x=>x+x).join('') : s, 16);
+      return { r:(n >> 16) & 255, g:(n >> 8) & 255, b:n & 255 };
+    }
+
+    function getEmptyCellPreset(){
+      const key = state.emptyCellPreset || els.emptyCellPreset?.value || 'transparent';
+      const base = EMPTY_CELL_PRESETS[key] || EMPTY_CELL_PRESETS.transparent;
+      const color = key === 'custom' ? (state.emptyCellColor || els.emptyCellColor?.value || base.color) : base.color;
+      return { ...base, key, color };
+    }
+
+    function isEmptyCellAt(col, row){
+      return !state.cells?.[row]?.[col];
+    }
+
+    function drawEmptyCell(target, x, y, w, h, mode = 'editor'){
+      const preset = getEmptyCellPreset();
+      let fill = null;
+      if(mode === 'download-white') fill = '#ffffff';
+      else if(mode === 'download-material') fill = preset.color;
+      else if(mode === 'editor' && preset.key !== 'transparent') fill = preset.color;
+      if(!fill) return;
+      target.save();
+      target.fillStyle = fill;
+      target.fillRect(x, y, w, h);
+      if(mode === 'editor' && preset.key !== 'transparent'){
+        target.globalAlpha = 0.12;
+        target.strokeStyle = '#000';
+        for(let yy=y+8; yy<y+h; yy+=16){
+          target.beginPath();
+          target.moveTo(x, yy);
+          target.lineTo(x+w, yy);
+          target.stroke();
+        }
       }
+      target.restore();
+    }
+
+    function getEmptyCellStats(){
+      const preset = getEmptyCellPreset();
+      const rgb = hexToRgb(preset.color);
+      const brightness = (0.2126*rgb.r + 0.7152*rgb.g + 0.0722*rgb.b) / 255;
+      return {
+        r:rgb.r, g:rgb.g, b:rgb.b, avgColor:preset.color, brightness, contrast:0, saturation:0,
+        blueScore:preset.waterScore || 0, greenScore:preset.forestScore || 0, sandScore:preset.sandScore || 0, rockScore:preset.rockScore || 0,
+        biome:preset.biome, biomeTH:preset.biomeTH, material:preset.material, height01:preset.height01 || 0, isEmpty:true
+      };
+    }
+
+    function materialForBiome(biome){
+      return ({
+        empty:'Air', custom:getEmptyCellPreset().material, deep_ocean:'Water', shallow_water:'Water', beach:'Sand', forest:'Grass', plain:'Grass', dry_plain:'Ground', rock_mountain:'Rock', cliff:'Slate', highland:'Ground'
+      })[biome] || getEmptyCellPreset().material || 'Ground';
+    }
+
+    function biomeLabelTH(biome){
+      return ({empty:'ช่องว่าง', custom:'กำหนดเอง', deep_ocean:'ทะเลลึก', shallow_water:'น้ำตื้น', beach:'ชายหาด', forest:'ป่า', plain:'ที่ราบ', dry_plain:'ที่ราบแห้ง', rock_mountain:'ภูเขาหิน', cliff:'หน้าผา', highland:'ที่สูง'})[biome] || biome;
+    }
+
+    function getRegionImageStats(x0, y0, w, h){
+      const midCol = Math.floor((x0 + w/2) / state.cellW);
+      const midRow = Math.floor((y0 + h/2) / state.cellH);
+      if(midCol >= 0 && midRow >= 0 && midCol < state.cols && midRow < state.rows && isEmptyCellAt(midCol, midRow)){
+        return getEmptyCellStats();
+      }
+      x0 = Math.max(0, Math.round(x0));
+      y0 = Math.max(0, Math.round(y0));
+      w = Math.max(1, Math.min(canvas.width - x0, Math.round(w)));
+      h = Math.max(1, Math.min(canvas.height - y0, Math.round(h)));
+      const data = ctx.getImageData(x0, y0, w, h).data;
+      let r=0,g=0,b=0,count=0, brightSum=0, brightSq=0;
+      const pixelCount = w*h;
+      const sampleStep = Math.max(1, Math.floor(Math.sqrt(pixelCount/900)));
+      for(let yy=0; yy<h; yy+=sampleStep){
+        for(let xx=0; xx<w; xx+=sampleStep){
+          const i=(yy*w+xx)*4;
+          const rr=data[i], gg=data[i+1], bb=data[i+2];
+          const br=(0.2126*rr + 0.7152*gg + 0.0722*bb) / 255;
+          r+=rr; g+=gg; b+=bb; brightSum+=br; brightSq+=br*br; count++;
+        }
+      }
+      if(!count) count = 1;
+      r/=count; g/=count; b/=count;
+      const brightness = brightSum/count;
+      const variance = Math.max(0, brightSq/count - brightness*brightness);
+      const contrast = Math.sqrt(variance);
+      const maxRGB = Math.max(r,g,b), minRGB = Math.min(r,g,b);
+      const saturation = maxRGB === 0 ? 0 : (maxRGB-minRGB)/maxRGB;
+      const blueScore = clamp01((b - Math.max(r,g)*0.86 + 35) / 115);
+      const greenScore = clamp01((g - Math.max(r,b)*0.72 + 35) / 125);
+      const sandScore = clamp01(((r+g)/2 - b + 18) / 115) * clamp01((brightness - 0.30) / 0.50);
+      const rockScore = clamp01((contrast*2.1 + (1-saturation)*0.35 + (1-brightness)*0.25) - 0.35);
+      let biome = 'plain';
+      if(blueScore > 0.64) biome = brightness < 0.32 ? 'deep_ocean' : 'shallow_water';
+      else if(sandScore > 0.60) biome = 'beach';
+      else if(greenScore > 0.55) biome = contrast > 0.16 ? 'forest' : 'plain';
+      else if(rockScore > 0.55 && brightness < 0.55) biome = 'rock_mountain';
+      else if(brightness > 0.66 && sandScore > 0.35) biome = 'dry_plain';
+      else if(contrast > 0.22 && brightness < 0.50) biome = 'cliff';
+
+      const mode = els.analysisMode.value;
+      let height01;
+      if(mode === 'brightness') height01 = brightness;
+      else if(mode === 'inverse') height01 = 1 - brightness;
+      else {
+        height01 = clamp01(greenScore*0.30 + sandScore*0.14 + rockScore*0.32 + contrast*0.30 + (1-blueScore)*0.08 + (1-brightness)*0.06);
+        if(biome === 'deep_ocean') height01 = 0.00;
+        if(biome === 'shallow_water') height01 = 0.05;
+        if(biome === 'beach') height01 = Math.max(height01, 0.12);
+        if(biome === 'forest') height01 = Math.max(height01, 0.25);
+        if(biome === 'rock_mountain') height01 = Math.max(height01, 0.70);
+        if(biome === 'cliff') height01 = Math.max(height01, 0.62);
+      }
+      return { r, g, b, avgColor: rgbToHex(r,g,b), brightness, contrast, saturation, blueScore, greenScore, sandScore, rockScore, biome, height01 };
+    }
+
+    function getCellImageStats(col,row){
+      return getRegionImageStats(col * state.cellW, row * state.cellH, state.cellW, state.cellH);
+    }
+
+
+    function smoothCells(raw, cols, rows, passes){
+      let arr = raw.map(x => ({...x}));
+      for(let pass=0; pass<passes; pass++){
+        const next = arr.map(x => ({...x}));
+        for(let r=0; r<rows; r++){
+          for(let c=0; c<cols; c++){
+            const i=r*cols+c;
+            const cell=arr[i];
+            if(cell.biome === 'deep_ocean' || cell.biome === 'shallow_water') continue;
+            let sum=cell.height01*2, weight=2;
+            for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
+              const nc=c+dc, nr=r+dr;
+              if(nc<0||nr<0||nc>=cols||nr>=rows) continue;
+              const n=arr[nr*cols+nc];
+              if(n.biome === 'deep_ocean') continue;
+              sum += n.height01; weight += 1;
+            }
+            next[i].height01 = clamp01(sum/weight);
+          }
+        }
+        arr=next;
+      }
+      return arr;
+    }
+
+    function smoothExportCells(cells, cols, rows, passes){
+      let arr = cells.map(x => ({...x}));
+      for(let pass=0; pass<passes; pass++){
+        const next = arr.map(x => ({...x}));
+        for(let r=0; r<rows; r++){
+          for(let c=0; c<cols; c++){
+            const i=r*cols+c;
+            const cell=arr[i];
+            if(!cell || cell.biome === 'deep_ocean' || cell.biome === 'shallow_water') continue;
+            let sum=cell.height01*3, weight=3;
+            for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]){
+              const nc=c+dc, nr=r+dr;
+              if(nc<0||nr<0||nc>=cols||nr>=rows) continue;
+              const n=arr[nr*cols+nc];
+              if(!n || n.biome === 'deep_ocean') continue;
+              sum += n.height01; weight += 1;
+            }
+            next[i].height01 = clamp01(sum/weight);
+          }
+        }
+        arr=next;
+      }
+      return arr;
+    }
+
+    function buildExportPack(){
+      render({showSelection:false, showGrid:false, fullRender:true, forceFullImages:true});
+      const studsPerMajor = Math.max(1, Number(els.studsPerCell.value)||100);
+      const detailMode = els.exportDetailMode?.value || 'major';
+      const subdiv = detailMode === 'subdiv' ? clampInt(els.exportSubdiv?.value || 4, 1, 16) : 1;
+      const tileStuds = +(studsPerMajor / subdiv).toFixed(4);
+      const maxH = Math.max(1, Number(els.maxHeightStuds.value)||80);
+      const thickness = Math.max(1, Number(els.partThickness.value)||8);
+      const sea = Number(els.seaLevelStuds.value)||0;
+      const mapName = els.exportMapName.value.trim() || currentProject.name || 'Roblox Map Grid';
+      const scope = els.exportScope.value || 'all';
+      const exportCols = state.cols * subdiv;
+      const exportRows = state.rows * subdiv;
+      const totalW = state.cols * studsPerMajor, totalD = state.rows * studsPerMajor;
+      const selectedMajor = new Set([...state.selected].map(k=>{ const p=parseKey(k); return `${p.col},${p.row}`; }));
+      const raw = [];
+      for(let r=0;r<state.rows;r++){
+        for(let sr=0;sr<subdiv;sr++){
+          for(let c=0;c<state.cols;c++){
+            for(let sc=0;sc<subdiv;sc++){
+              const selected = selectedMajor.has(`${c},${r}`);
+              const regionX = c*state.cellW + sc*(state.cellW/subdiv);
+              const regionY = r*state.cellH + sr*(state.cellH/subdiv);
+              const stats = getRegionImageStats(regionX, regionY, state.cellW/subdiv, state.cellH/subdiv);
+              raw.push({ parentCol:c, parentRow:r, subCol:sc, subRow:sr, gridCol:c*subdiv+sc, gridRow:r*subdiv+sr, selected, ...stats });
+            }
+          }
+        }
+      }
+      const smoothPasses = Math.max(0, Number(els.smoothMode.value)||0);
+      const analyzed = smoothExportCells(raw, exportCols, exportRows, smoothPasses);
+      const cells = [];
+      let index=1;
+      for(const st of analyzed){
+        const parentSelected = st.selected;
+        if(scope === 'selected' && !parentSelected) { index++; continue; }
+        let height = Math.round(st.height01 * maxH);
+        if(st.biome === 'deep_ocean') height = Math.min(height, sea);
+        if(st.biome === 'shallow_water') height = Math.max(sea, height);
+        const cornerX = (st.parentCol * studsPerMajor) + (st.subCol * tileStuds);
+        const cornerZ = (st.parentRow * studsPerMajor) + (st.subRow * tileStuds);
+        let x = cornerX + tileStuds/2;
+        let z = cornerZ + tileStuds/2;
+        if(els.originMode.value === 'center') { x -= totalW/2; z -= totalD/2; }
+        cells.push({
+          index, parentIndex: st.parentRow*state.cols+st.parentCol+1,
+          row:st.gridRow+1, col:st.gridCol+1,
+          parentRow:st.parentRow+1, parentCol:st.parentCol+1,
+          subRow:st.subRow+1, subCol:st.subCol+1,
+          selected:parentSelected,
+          order:'left-to-right, top-to-bottom, with subcells inside each major cell',
+          xStud:+x.toFixed(2), zStud:+z.toFixed(2),
+          cornerX:+(els.originMode.value === 'center' ? cornerX-totalW/2 : cornerX).toFixed(2),
+          cornerZ:+(els.originMode.value === 'center' ? cornerZ-totalD/2 : cornerZ).toFixed(2),
+          sizeStuds:{x:+tileStuds.toFixed(3),z:+tileStuds.toFixed(3),y:Math.max(thickness,height)},
+          majorCellSizeStuds:studsPerMajor,
+          heightStuds:height,
+          biome:st.biome, biomeTH:st.biomeTH || biomeLabelTH(st.biome), material:st.material || materialForBiome(st.biome), avgColor:st.avgColor,
+          brightness:+st.brightness.toFixed(3), contrast:+st.contrast.toFixed(3), saturation:+st.saturation.toFixed(3),
+          waterScore:+st.blueScore.toFixed(3), forestScore:+st.greenScore.toFixed(3), sandScore:+st.sandScore.toFixed(3), rockScore:+st.rockScore.toFixed(3)
+        });
+        index++;
+      }
+      const counts = cells.reduce((a,c)=>{ a[c.biome]=(a[c.biome]||0)+1; return a; },{});
+      const heights = cells.map(c=>c.heightStuds);
+      const pack = {
+        version:'3.0-pro-subdiv', mapName,
+        cols:state.cols, rows:state.rows, exportCols, exportRows,
+        subdivPerMajorCell:subdiv, detailMode,
+        exportedCells:cells.length, totalCells:state.cols*state.rows, totalExportTiles:exportCols*exportRows,
+        cellSizeStuds:studsPerMajor, tileSizeStuds:tileStuds, maxHeightStuds:maxH, partThickness:thickness, seaLevelStuds:sea,
+        originMode:els.originMode.value, smoothingPasses:smoothPasses,
+        numbering:'ช่องใหญ่ 1 เริ่มจากซ้ายบน นับซ้ายไปขวา แล้วไล่จากบนลงล่าง; ช่องย่อยใช้ row/col ระดับ export และ parentRow/parentCol เพื่ออ้างอิงช่องใหญ่',
+        recommendedWorkflow:[
+          'เริ่มจาก Subdiv 4 ต่อช่องใหญ่ก่อน ถ้าแมพหนักค่อยลดเป็น 2 หรือ 3',
+          'ใช้ Studio Script .lua สร้าง Draft เป็น Parts ก่อน เพราะแก้ง่ายและเห็นเลขช่อง',
+          'เมื่อพอใจแล้วค่อยตั้ง USE_TERRAIN = true เพื่อสร้าง Terrain',
+          'ถ้า export เกิน 5000 tiles ควรแบ่งทำทีละโซนเพื่อไม่ให้ Studio หน่วง'
+        ],
+        summary:{ biomeCounts:counts, minHeight:Math.min(...heights), maxHeight:Math.max(...heights), avgHeight:+(heights.reduce((a,b)=>a+b,0)/Math.max(1,heights.length)).toFixed(2) },
+        cells
+      };
+      lastExportPack = pack;
+      updateExportSummary(pack);
+      drawPreviewCanvas(pack);
+      return pack;
+    }
+
+
+    function updateExportSummary(pack){
+      const counts = Object.entries(pack.summary.biomeCounts).map(([k,v])=>`<span class="badge">${biomeLabelTH(k)}: ${v}</span>`).join('');
+      els.exportSummary.innerHTML = `
+        <div class="exportStats">
+          <div class="statBox"><b>${pack.cols}×${pack.rows}</b>Major grid</div>
+          <div class="statBox"><b>${pack.exportCols}×${pack.exportRows}</b>Export tiles</div>
+          <div class="statBox"><b>${pack.tileSizeStuds}</b>Studs/tile</div>
+          <div class="statBox"><b>${pack.summary.minHeight}-${pack.summary.maxHeight}</b>Height range</div>
+        </div>
+        <div class="status">ช่องใหญ่ 1 ช่อง = ${pack.cellSizeStuds}×${pack.cellSizeStuds} studs | Subdiv = ${pack.subdivPerMajorCell} | 1 tile จริงใน Roblox = ${pack.tileSizeStuds}×${pack.tileSizeStuds} studs | Exported ${pack.exportedCells}/${pack.totalExportTiles} tiles</div>
+        <div class="badgeRow">${counts}</div>`;
+    }
+
+
+    function packToPrompt(pack){
+      const lines = [];
+      lines.push(`AI ROBLOX PRO TERRAIN PROMPT / คำสั่งสำหรับ AI ใน Roblox Studio`);
+      lines.push(`Project name: ${pack.mapName}`);
+      lines.push('');
+      lines.push('ROLE: You are a Roblox Studio world-building assistant. Build a usable terrain/blockout from the exact grid data. Do not invent a different layout. Keep coastline, biome placement, height, and cell order.');
+      lines.push('');
+      lines.push(`MAJOR GRID: ${pack.cols} columns x ${pack.rows} rows. One major cell = ${pack.cellSizeStuds} x ${pack.cellSizeStuds} studs.`);
+      lines.push(`PRO DETAIL GRID: subdivPerMajorCell = ${pack.subdivPerMajorCell}. Export grid = ${pack.exportCols} x ${pack.exportRows}. One exported tile = ${pack.tileSizeStuds} x ${pack.tileSizeStuds} studs.`);
+      lines.push(`NUMBERING: parentIndex = big cell number. index = exported tile number. Count left-to-right, top-to-bottom.`);
+      lines.push(`SCALE: originMode=${pack.originMode}, seaLevel=${pack.seaLevelStuds}, maxHeight=${pack.maxHeightStuds}, smoothingPasses=${pack.smoothingPasses}.`);
+      lines.push('');
+      lines.push('BUILD RULES:');
+      lines.push('1) Use xStud/zStud as the exact center position for each exported tile.');
+      lines.push('2) Use sizeStuds.x and sizeStuds.z as tile width/depth. Use heightStuds as visible height.');
+      lines.push('3) parentRow/parentCol tells which big image grid cell the tile came from. subRow/subCol tells position inside that big cell.');
+      lines.push('4) Deep ocean and shallow water must stay low/flat. Beach must stay between water and land. Forest/plain walkable. Rock/cliff/mountain higher and rougher.');
+      lines.push('5) Smooth neighbor transitions but never move tile centers and never change biome pattern aggressively.');
+      lines.push('6) Prefer the downloaded Lua script for exact generation. This prompt is for AI refinement and decoration after blockout generation.');
+      lines.push('');
+      lines.push('CELL DATA FORMAT: index | parentIndex | parent R,C | sub R,C | export R,C | center X,Z | tile size | height | biome | material | color');
+      lines.push('');
+      const limit = Math.min(pack.cells.length, 1200);
+      for(let n=0; n<limit; n++){
+        const c = pack.cells[n];
+        lines.push(`Tile ${c.index} | parent=${c.parentIndex} | parentR${c.parentRow}C${c.parentCol} | subR${c.subRow}C${c.subCol} | exportR${c.row}C${c.col} | center=(${c.xStud}, ${c.zStud}) | size=${c.sizeStuds.x}x${c.sizeStuds.z} | height=${c.heightStuds} | biome=${c.biome}/${c.biomeTH} | material=${c.material} | color=${c.avgColor}`);
+      }
+      if(pack.cells.length > limit) lines.push(`... ${pack.cells.length-limit} more tiles omitted from prompt preview. Use JSON or Lua file for the full dataset.`);
+      lines.push('');
+      lines.push('OUTPUT REQUIREMENT FOR AI: Return Roblox Lua or exact Studio steps that preserve this data. Do not only summarize.');
+      return lines.join('\n');
+    }
+
+
+    function packToAiJson(pack){
+      return JSON.stringify({
+        aiInstruction:'PRO DATASET. Use this JSON as exact source data for Roblox terrain/blockout generation. major cells are image-grid cells; exported tiles are real Roblox build units. Use xStud,zStud,sizeStuds,heightStuds,biome/material/color. parentRow/parentCol identify original big cell; subRow/subCol identify subdivision inside it.',
+        map: pack
+      }, null, 2);
+    }
+
+
+    function packToCsv(pack){
+      const head = ['index','parentIndex','parentRow','parentCol','subRow','subCol','row','col','xStud','zStud','cornerX','cornerZ','sizeX','sizeZ','heightStuds','biome','biomeTH','material','avgColor','brightness','contrast','waterScore','forestScore','sandScore','rockScore'];
+      const q = v => `"${String(v).replace(/"/g,'""')}"`;
+      const rows = pack.cells.map(c => [c.index,c.parentIndex,c.parentRow,c.parentCol,c.subRow,c.subCol,c.row,c.col,c.xStud,c.zStud,c.cornerX,c.cornerZ,c.sizeStuds.x,c.sizeStuds.z,c.heightStuds,c.biome,c.biomeTH,c.material,c.avgColor,c.brightness,c.contrast,c.waterScore,c.forestScore,c.sandScore,c.rockScore].map(q).join(','));
+      return [head.join(','), ...rows].join('\n');
+    }
+
+
+
+    function luaString(v){
+      return String(v ?? '').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'');
+    }
+
+    function packToLua(pack){
+      const lines = [];
+      const cleanMap = luaString(pack.mapName).replace(/[^\w\- ]/g,'').trim() || 'Roblox_Map_Grid';
+      const tileCount = pack.cells.length;
+      const suggestedBatch = tileCount > 5000 ? 80 : tileCount > 2000 ? 120 : 200;
+      lines.push('-- Auto-generated from Image Grid Builder Pro Export v4 ROBLOX EXPORT PRO FIX');
+      lines.push('-- วิธีใช้ที่แนะนำ: สร้าง Script ใน ServerScriptService แล้ววางโค้ดนี้ จากนั้นกด Play/Run');
+      lines.push('-- ไม่แนะนำให้วางใน Command Bar ถ้า tile เยอะ เพราะอาจ timeout หรือ Studio หน่วง');
+      lines.push('-- Pro mode: exported tiles can be subdivisions of each major image cell.');
+      lines.push('local Workspace = game:GetService("Workspace")');
+      lines.push('local RunService = game:GetService("RunService")');
+      lines.push('local MAP_NAME = "'+cleanMap+'"');
+      lines.push('local USE_TERRAIN = false -- true = สร้าง Terrain ด้วย FillBlock');
+      lines.push('local KEEP_PARTS = true -- true = เก็บ Part draft ไว้แก้มือ / false = ถ้า USE_TERRAIN true จะไม่สร้าง Part');
+      lines.push('local ADD_LABELS = false -- เปิดเฉพาะตอน debug เพราะหลายพัน tile จะหน่วงมาก');
+      lines.push('local CLEAR_OLD = true');
+      lines.push('local CLEAR_TERRAIN_FIRST = false -- true = ล้าง Terrain ทั้งหมดก่อนสร้าง ระวังลบงานอื่นใน Workspace.Terrain');
+      lines.push('local BATCH_SIZE = '+suggestedBatch+' -- ลดลงถ้า Studio กระตุก / เพิ่มได้ถ้าเครื่องแรง');
+      lines.push('local HEIGHT_MODE = "block" -- "block" = พื้นเริ่มที่ Y=0, "sea" = น้ำต่ำตาม sea level แบบง่าย');
+      lines.push(`local SEA_LEVEL = ${pack.seaLevelStuds}`);
+      lines.push(`local PART_THICKNESS = ${pack.partThickness}`);
+      lines.push(`local MAJOR_COLS, MAJOR_ROWS = ${pack.cols}, ${pack.rows}`);
+      lines.push(`local EXPORT_COLS, EXPORT_ROWS = ${pack.exportCols}, ${pack.exportRows}`);
+      lines.push(`local SUBDIV_PER_MAJOR = ${pack.subdivPerMajorCell}`);
+      lines.push(`local MAJOR_CELL_STUDS = ${pack.cellSizeStuds}`);
+      lines.push(`local TILE_STUDS = ${pack.tileSizeStuds}`);
+      lines.push('local folderName = MAP_NAME .. "_ProGrid"');
+      lines.push('if CLEAR_OLD and Workspace:FindFirstChild(folderName) then Workspace[folderName]:Destroy() end');
+      lines.push('if CLEAR_TERRAIN_FIRST and USE_TERRAIN then Workspace.Terrain:Clear() end');
+      lines.push('local folder = Instance.new("Folder")');
+      lines.push('folder.Name = folderName');
+      lines.push('folder.Parent = Workspace');
+      lines.push('local biomeColors = {');
+      lines.push('  deep_ocean=Color3.fromRGB(8,35,70), shallow_water=Color3.fromRGB(40,170,180), beach=Color3.fromRGB(210,185,120), forest=Color3.fromRGB(35,120,65), plain=Color3.fromRGB(95,150,80), dry_plain=Color3.fromRGB(165,145,90), rock_mountain=Color3.fromRGB(95,95,95), cliff=Color3.fromRGB(80,80,86), highland=Color3.fromRGB(120,110,80)');
+      lines.push('}');
+      lines.push('local biomeMaterials = {');
+      lines.push('  deep_ocean=Enum.Material.Water, shallow_water=Enum.Material.Water, beach=Enum.Material.Sand, forest=Enum.Material.Grass, plain=Enum.Material.Grass, dry_plain=Enum.Material.Ground, rock_mountain=Enum.Material.Rock, cliff=Enum.Material.Slate, highland=Enum.Material.Ground');
+      lines.push('}');
+      lines.push('local waterBiomes = { deep_ocean=true, shallow_water=true }');
+      lines.push('local data = {');
+      for(const c of pack.cells){
+        const visibleH = Math.max(1, c.heightStuds);
+        const partH = Math.max(pack.partThickness, c.heightStuds);
+        lines.push(`  {i=${c.index}, p=${c.parentIndex}, pr=${c.parentRow}, pc=${c.parentCol}, sr=${c.subRow}, sc=${c.subCol}, row=${c.row}, col=${c.col}, x=${c.xStud}, z=${c.zStud}, sx=${c.sizeStuds.x}, sz=${c.sizeStuds.z}, h=${partH}, rawH=${visibleH}, biome="${c.biome}", biomeTH="${luaString(c.biomeTH)}", material="${c.material}", color="${c.avgColor}", brightness=${c.brightness}, contrast=${c.contrast}},`);
+      }
+      lines.push('}');
+      lines.push('local function hexToColor3(hex)');
+      lines.push('  hex = tostring(hex or "#777777"):gsub("#", "")');
+      lines.push('  return Color3.fromRGB(tonumber(hex:sub(1,2),16) or 120, tonumber(hex:sub(3,4),16) or 120, tonumber(hex:sub(5,6),16) or 120)');
+      lines.push('end');
+      lines.push('local function getTileSize(c)');
+      lines.push('  local height = math.max(1, tonumber(c.h) or 1)');
+      lines.push('  return Vector3.new(c.sx, height, c.sz)');
+      lines.push('end');
+      lines.push('local function getTilePos(c, size)');
+      lines.push('  -- Roblox ใช้แกน Y เป็นความสูง; วาง Part ให้ฐานอยู่ที่ Y=0 เพื่อไม่ฝังดิน');
+      lines.push('  local y = size.Y / 2');
+      lines.push('  if HEIGHT_MODE == "sea" and waterBiomes[c.biome] then');
+      lines.push('    y = math.max(0.5, SEA_LEVEL / 2)');
+      lines.push('  end');
+      lines.push('  return Vector3.new(c.x, y, c.z)');
+      lines.push('end');
+      lines.push('local function makeLabel(part, text)');
+      lines.push('  if not ADD_LABELS then return end');
+      lines.push('  local gui = Instance.new("BillboardGui")');
+      lines.push('  gui.Name = "TileLabel"; gui.Size = UDim2.fromOffset(90, 34); gui.StudsOffset = Vector3.new(0, part.Size.Y/2 + 5, 0); gui.AlwaysOnTop = true; gui.Parent = part');
+      lines.push('  local label = Instance.new("TextLabel")');
+      lines.push('  label.Size = UDim2.fromScale(1,1); label.BackgroundTransparency = 0.25; label.TextScaled = true; label.Font = Enum.Font.GothamBold; label.TextColor3 = Color3.new(1,1,1); label.TextStrokeTransparency = 0; label.Text = text; label.Parent = gui');
+      lines.push('end');
+      lines.push('local function createTile(c)');
+      lines.push('  local mat = biomeMaterials[c.biome] or Enum.Material.SmoothPlastic');
+      lines.push('  local color = biomeColors[c.biome] or hexToColor3(c.color)');
+      lines.push('  local size = getTileSize(c)');
+      lines.push('  local pos = getTilePos(c, size)');
+      lines.push('  local cf = CFrame.new(pos)');
+      lines.push('  if USE_TERRAIN then');
+      lines.push('    -- FillBlock รองรับ Enum.Material.Water ได้ จึงใช้ material ตาม biome โดยตรง');
+      lines.push('    Workspace.Terrain:FillBlock(cf, size, mat)');
+      lines.push('  end');
+      lines.push('  if KEEP_PARTS or not USE_TERRAIN then');
+      lines.push('    local p = Instance.new("Part")');
+      lines.push('    p.Name = string.format("T%d_%s", c.i, c.biome) -- ชื่อสั้น อ่านง่าย ไม่ถ่วง Explorer');
+      lines.push('    p.Anchored = true');
+      lines.push('    p.Size = size');
+      lines.push('    p.Position = pos');
+      lines.push('    p.Color = color');
+      lines.push('    p.Material = mat');
+      lines.push('    p.TopSurface = Enum.SurfaceType.Smooth; p.BottomSurface = Enum.SurfaceType.Smooth');
+      lines.push('    p:SetAttribute("TileIndex", c.i); p:SetAttribute("ParentCellIndex", c.p); p:SetAttribute("ParentRow", c.pr); p:SetAttribute("ParentColumn", c.pc); p:SetAttribute("SubRow", c.sr); p:SetAttribute("SubColumn", c.sc); p:SetAttribute("ExportRow", c.row); p:SetAttribute("ExportColumn", c.col); p:SetAttribute("Biome", c.biome); p:SetAttribute("HeightStuds", c.rawH)');
+      lines.push('    p.Parent = folder');
+      lines.push('    makeLabel(p, string.format("T%d P%d", c.i, c.p))');
+      lines.push('  end');
+      lines.push('end');
+      lines.push('local started = os.clock()');
+      lines.push('for i, c in ipairs(data) do');
+      lines.push('  createTile(c)');
+      lines.push('  if i % BATCH_SIZE == 0 then');
+      lines.push('    print(string.format("%s: generated %d/%d tiles", MAP_NAME, i, #data))');
+      lines.push('    task.wait()');
+      lines.push('  end');
+      lines.push('end');
+      lines.push('local info = Instance.new("StringValue")');
+      lines.push('info.Name = "AI_ProGrid_Metadata"');
+      lines.push('info.Value = string.format("Major grid %dx%d, subdiv %d, export grid %dx%d, tile %.3f studs, generated %d tiles. Use attributes on each Part to inspect parent/sub grid.", MAJOR_COLS, MAJOR_ROWS, SUBDIV_PER_MAJOR, EXPORT_COLS, EXPORT_ROWS, TILE_STUDS, #data)');
+      lines.push('info.Parent = folder');
+      lines.push('print(string.format("Generated %d pro terrain tiles for %s in %.2fs. Folder: %s", #data, MAP_NAME, os.clock()-started, folderName))');
+      lines.push('print("Tip: For a large map, keep USE_TERRAIN=false first. After checking layout, set USE_TERRAIN=true and optionally KEEP_PARTS=false.")');
+      return lines.join('\n');
+    }
+
+    function drawPreviewCanvas(pack){
+      const pc = els.exportPreviewCanvas;
+      if(!pc) return;
+      const scale = Math.max(1, Math.min(12, Math.floor(900/Math.max(pack.exportCols || pack.cols, pack.exportRows || pack.rows))));
+      pc.width = (pack.exportCols || pack.cols) * scale;
+      pc.height = (pack.exportRows || pack.rows) * scale;
+      const o = pc.getContext('2d');
+      const color = {deep_ocean:'#082346',shallow_water:'#28aab4',beach:'#d2b978',forest:'#237841',plain:'#5f9650',dry_plain:'#a5915a',rock_mountain:'#5f5f5f',cliff:'#505056',highland:'#786e50'};
+      o.fillStyle='#05070a'; o.fillRect(0,0,pc.width,pc.height);
+      for(const c of pack.cells){
+        const x=(c.col-1)*scale, y=(c.row-1)*scale;
+        o.fillStyle=color[c.biome]||'#777';
+        o.globalAlpha=0.65 + Math.min(0.35, c.heightStuds/Math.max(1,pack.maxHeightStuds)*0.35);
+        o.fillRect(x,y,scale,scale);
+      }
+      o.globalAlpha=1;
+      if(scale >= 8){
+        o.strokeStyle='rgba(0,0,0,.35)'; o.lineWidth=1;
+        for(let x=0;x<=pc.width;x+=scale){o.beginPath();o.moveTo(x,0);o.lineTo(x,pc.height);o.stroke();}
+        for(let y=0;y<=pc.height;y+=scale){o.beginPath();o.moveTo(0,y);o.lineTo(pc.width,y);o.stroke();}
+      }
+    }
+
+
+    function downloadHeightBiomeMap(){
+      const pack = lastExportPack || buildExportPack();
+      const tilePx = Math.max(2, Math.min(32, Math.floor(1200/Math.max(pack.exportCols, pack.exportRows))));
+      const off = document.createElement('canvas');
+      off.width = pack.exportCols * tilePx; off.height = pack.exportRows * tilePx;
+      const o = off.getContext('2d');
+      const biomeColor = {deep_ocean:'#082346',shallow_water:'#28aab4',beach:'#d2b978',forest:'#237841',plain:'#5f9650',dry_plain:'#a5915a',rock_mountain:'#5f5f5f',cliff:'#505056',highland:'#786e50'};
+      o.fillStyle = '#111'; o.fillRect(0,0,off.width,off.height);
+      for(const c of pack.cells){
+        const x=(c.col-1)*tilePx, y=(c.row-1)*tilePx;
+        o.fillStyle = biomeColor[c.biome] || '#777';
+        o.globalAlpha = 0.55 + Math.min(0.45, c.heightStuds/Math.max(1,pack.maxHeightStuds)*0.45);
+        o.fillRect(x,y,tilePx,tilePx);
+      }
+      o.globalAlpha = 1;
+      if(tilePx >= 14){
+        o.textAlign='center'; o.textBaseline='middle'; o.font = `${Math.max(8, Math.floor(tilePx/3))}px sans-serif`;
+        o.fillStyle='#fff';
+        for(const c of pack.cells){
+          if((c.index % Math.max(1, pack.subdivPerMajorCell)) !== 1) continue;
+          const x=(c.col-1)*tilePx, y=(c.row-1)*tilePx;
+          o.fillText(`${c.parentIndex}`, x+tilePx/2, y+tilePx/2);
+        }
+      }
+      off.toBlob(blob => {
+        const url=URL.createObjectURL(blob);
+        download(url, safeFileName(pack.mapName)+'_pro_height_biome_preview.png');
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+      }, 'image/png');
+    }
+
+
+
+    function getTerrainImageExportSize(pack){
+      // ให้ Color Map และ Heightmap มีขนาดเท่ากันเสมอ เพื่อใช้คู่กันใน Roblox Terrain/Image workflow
+      const maxPixels = 2048;
+      const baseCols = Math.max(1, pack.exportCols || pack.cols || 1);
+      const baseRows = Math.max(1, pack.exportRows || pack.rows || 1);
+      const tilePx = Math.max(1, Math.min(64, Math.floor(maxPixels / Math.max(baseCols, baseRows))));
+      return { width: baseCols * tilePx, height: baseRows * tilePx, tilePx };
+    }
+
+    function makeTerrainColorMapCanvas(pack){
+      // ภาพสีจริงจาก canvas รวมภาพทั้งหมด ไม่ติด grid/selection
+      render({showSelection:false, showGrid:false, fullRender:true, forceFullImages:true});
+      const size = getTerrainImageExportSize(pack);
+      const off = document.createElement('canvas');
+      off.width = size.width;
+      off.height = size.height;
+      const o = off.getContext('2d', { alpha:false });
+      o.fillStyle = '#000';
+      o.fillRect(0,0,off.width,off.height);
+      o.imageSmoothingEnabled = true;
+      o.imageSmoothingQuality = 'high';
+      o.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, off.width, off.height);
+      return off;
+    }
+
+    function makeTerrainHeightmapCanvas(pack){
+      // ภาพขาวดำสำหรับความสูง: ดำ = ต่ำ / ขาว = สูง
+      // ใช้ pack.cells ที่ผ่าน analysis + smoothing แล้ว จึงตรงกับค่าที่ Lua/JSON export ใช้
+      const size = getTerrainImageExportSize(pack);
+      const off = document.createElement('canvas');
+      off.width = size.width;
+      off.height = size.height;
+      const o = off.getContext('2d', { alpha:false });
+      o.imageSmoothingEnabled = false;
+      o.fillStyle = '#000';
+      o.fillRect(0,0,off.width,off.height);
+
+      const maxH = Math.max(1, pack.maxHeightStuds || Number(els.maxHeightStuds?.value) || 80);
+      const tileW = off.width / Math.max(1, pack.exportCols || pack.cols || 1);
+      const tileH = off.height / Math.max(1, pack.exportRows || pack.rows || 1);
+
+      for(const c of pack.cells){
+        const n = clamp01((c.heightStuds || 0) / maxH);
+        const v = Math.round(n * 255);
+        o.fillStyle = `rgb(${v},${v},${v})`;
+        const x = Math.floor((c.col - 1) * tileW);
+        const y = Math.floor((c.row - 1) * tileH);
+        const w = Math.ceil(tileW + 0.5);
+        const h = Math.ceil(tileH + 0.5);
+        o.fillRect(x, y, w, h);
+      }
+      return off;
+    }
+
+    function downloadCanvasPng(canvasObj, filename){
+      canvasObj.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        download(url, filename);
+        setTimeout(() => URL.revokeObjectURL(url), 1200);
+      }, 'image/png');
+    }
+
+    function downloadTerrainColorMap(){
+      const pack = lastExportPack || buildExportPack();
+      const off = makeTerrainColorMapCanvas(pack);
+      downloadCanvasPng(off, safeFileName(pack.mapName) + '_terrain_color_map.png');
+      toast('ดาวน์โหลด Color Map แล้ว', 'success');
+    }
+
+    function downloadTerrainHeightmap(){
+      const pack = lastExportPack || buildExportPack();
+      const off = makeTerrainHeightmapCanvas(pack);
+      downloadCanvasPng(off, safeFileName(pack.mapName) + '_terrain_heightmap_grayscale.png');
+      toast('ดาวน์โหลด Heightmap ขาวดำแล้ว', 'success');
+    }
+
+    function downloadTerrainImagePack(){
+      const pack = lastExportPack || buildExportPack();
+      const color = makeTerrainColorMapCanvas(pack);
+      const height = makeTerrainHeightmapCanvas(pack);
+      const base = safeFileName(pack.mapName);
+      downloadCanvasPng(color, base + '_terrain_color_map.png');
+      setTimeout(() => downloadCanvasPng(height, base + '_terrain_heightmap_grayscale.png'), 450);
+      toast('กำลังดาวน์โหลด Color Map + Heightmap', 'success');
+    }
+
+    function setExportViewMode(mode){
+      exportViewMode = mode;
+      ['Prompt','Data','Lua'].forEach(name=>{
+        const btn=els['exportTab'+name];
+        if(btn) btn.classList.toggle('active', mode.toLowerCase()===name.toLowerCase());
+      });
+      if(!lastExportPack) return;
+      if(mode==='prompt') els.promptPreview.value = packToPrompt(lastExportPack);
+      if(mode==='data') els.promptPreview.value = packToAiJson(lastExportPack);
+      if(mode==='lua') els.promptPreview.value = packToLua(lastExportPack);
+    }
+
+    function generatePromptExport(){
+      const pack = buildExportPack();
+      setExportViewMode(exportViewMode || 'prompt');
+      render();
     }
 
     function syncSelectBtn(){
       const on=els.selectionEnabled.value==='on';
       els.selectToggleBtn.textContent=on?'☝':'✋';
       els.selectToggleBtn.style.background=on?'#2d64ff':'#252936';
-      pinchState = null; activePointers.clear();
+      pinchState = null;
+      activePointers.clear();
     }
 
     function renderMinorGridList(){
@@ -1241,11 +2930,12 @@
       });
       els.minorGridList.querySelectorAll('[data-field]').forEach(i=>i.addEventListener('change', updateMinor));
       els.minorGridList.querySelectorAll('[data-field]').forEach(i=>i.addEventListener('input', updateMinor));
-      els.minorGridList.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{ state.minorGrids=state.minorGrids.filter(g=>g.id!==b.dataset.remove); renderMinorGridList(); render(); markProjectChanged(); }));
+      els.minorGridList.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{ saveHistory('remove-minor-grid'); state.minorGrids=state.minorGrids.filter(g=>g.id!==b.dataset.remove); renderMinorGridList(); render(); markProjectChanged(); }));
     }
 
     function updateMinor(e){
       const g=state.minorGrids.find(x=>x.id===e.target.dataset.id); if(!g)return;
+      if(e.type === 'change') saveHistory('update-minor-grid');
       const f=e.target.dataset.field;
       if(f==='enabled')g.enabled=e.target.value==='true';
       else if(f==='spacing')g.spacing=clampInt(e.target.value,1,100000);
@@ -1254,19 +2944,17 @@
       render(); markProjectChanged();
     }
 
-    els.signInBtn.addEventListener('click', signInEmail);
-    els.registerBtn.addEventListener('click', registerEmail);
-    els.signOutBtn.addEventListener('click', () => { currentUser = null; onAuthChanged(null); });
-
+    els.signInBtn?.addEventListener('click', signInEmail);
+    els.registerBtn?.addEventListener('click', registerEmail);
+    els.signOutBtn?.addEventListener('click', () => { currentUser = null; onAuthChanged(null); toast('ออกจากระบบแล้ว', 'info'); });
     els.createProjectBtn.addEventListener('click',()=>createProject(els.projectNameInput.value.trim()));
-    els.loadCloudProjectBtn.addEventListener('click', loadLatestCloudProject);
-    els.exportProjectFileBtn.addEventListener('click', exportProjectFile);
-    els.importProjectFileInput.addEventListener('change', e => importProjectFile(e.target.files[0]));
-
+    els.loadCloudProjectBtn?.addEventListener('click', loadLatestCloudProject);
+    els.exportProjectFileBtn?.addEventListener('click', exportProjectFile);
+    els.importProjectFileInput?.addEventListener('change', e => importProjectFile(e.target.files[0]));
     els.addShortcutBtn.addEventListener('click', async ()=>{
       const code = safeCode(els.shortcutCodeInput.value);
       const name = els.shortcutNameInput.value.trim() || code || 'Unnamed Server';
-      if(!code) return alert('กรุณาใส่ Server Code ก่อน');
+      if(!code) return toast('กรุณาใส่ Server Code ก่อน', 'warn');
       let projectId = '';
       try { const data = await resolveCode(code); projectId = data?.projectId || ''; } catch {}
       await saveRoomShortcut(projectId, name, code);
@@ -1277,44 +2965,117 @@
     els.refreshShortcutBtn.addEventListener('click', renderRoomShortcuts);
     els.joinProjectBtn.addEventListener('click', async ()=>{
       const code = safeCode(els.joinCodeInput.value);
-      if(!code) return alert('กรุณาใส่ Code ก่อน');
+      if(!code) return toast('กรุณาใส่ Code ก่อน', 'warn');
       try { await joinByCode(code); }
-      catch(err){ alert('Join ไม่สำเร็จ: ' + err.message); }
+      catch(err){ toast('Join ไม่สำเร็จ: ' + err.message, 'error'); }
     });
-    els.saveProjectBtn.addEventListener('click',()=>{ saveProjectCloudNow(); alert('เซฟขึ้น Firebase แล้ว'); });
+    els.saveProjectBtn.addEventListener('click',()=>{ saveProjectLocal(); toast('เซฟแล้ว', 'success'); });
     els.copyProjectBtn.addEventListener('click',()=>copyText(JSON.stringify(getProjectData())));
     els.backHomeBtn.addEventListener('click',showHome);
     els.copyShareLinkBtn.addEventListener('click',()=>copyText(location.href.split('#')[0]+'#project='+currentProject.id));
     els.generateCodeBtn.addEventListener('click',generateCode);
-    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectCloudNow(); updateProjectStatus(); });
+    els.toggleCodeBtn.addEventListener('click',()=>{ currentProject.codeEnabled=!currentProject.codeEnabled; saveProjectLocal(); saveProjectCloudNow(); updateProjectStatus(); });
 
     document.querySelectorAll('[data-open-tab]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.openTab)));
     document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
     els.openMenuBtn.addEventListener('click',()=>openSheet('setup'));
     els.closeSheetBtn.addEventListener('click',closeSheet);
     backdrop.addEventListener('click',closeSheet);
-    els.buildBtn.addEventListener('click',()=>{ buildGrid(); markProjectChanged(); });
+    els.buildBtn.addEventListener('click',confirmBuildGrid);
     els.mode.addEventListener('change',()=>{ const s=els.mode.value==='split'; els.combineBox.style.display=s?'none':'block'; els.splitBox.style.display=s?'block':'none'; });
     els.fillSelectedBtn.addEventListener('click',fillSelected);
     els.splitBtn.addEventListener('click',splitImage);
-    els.clearSelectionBtn.addEventListener('click',()=>{state.selected.clear();render();});
+    els.clearSelectionBtn.addEventListener('click',()=>{ state.selected.clear(); render(); toast('ล้างการเลือกแล้ว', 'info'); });
     els.deleteSelectedBtn.addEventListener('click',deleteSelected);
+    els.undoBtn?.addEventListener('click', undo);
+    els.redoBtn?.addEventListener('click', redo);
+    els.selectAllBtn?.addEventListener('click',()=>{
+      state.selected.clear();
+      const subdiv = els.selectLevel.value==='minor' ? activeSubdiv() : 1;
+      for(let r=0;r<state.rows;r++) for(let c=0;c<state.cols;c++){
+        if(subdiv===1) state.selected.add(keyOf(c,r));
+        else for(let sr=0;sr<subdiv;sr++) for(let sc=0;sc<subdiv;sc++) state.selected.add(keyOf(c,r,sc,sr));
+      }
+      render(); toast('เลือกทั้งหมดแล้ว', 'success');
+    });
+    els.toggleMiniMapBtn?.addEventListener('click',()=>{
+      miniMapEnabled = !miniMapEnabled;
+      if(miniMap) miniMap.classList.toggle('show', miniMapEnabled);
+      updateMiniMap();
+      toast(miniMapEnabled ? 'เปิด Minimap แล้ว' : 'ปิด Minimap แล้ว', 'info');
+    });
     els.downloadAllBtn.addEventListener('click',downloadAll);
     els.downloadSelectedBtn.addEventListener('click',downloadSelected);
-    els.downloadProjectFileBtn.addEventListener('click', exportProjectFile);
+    els.generatePromptBtn.addEventListener('click',generatePromptExport);
+    els.downloadPromptBtn.addEventListener('click',()=>{ const p=lastExportPack||buildExportPack(); downloadTextFile(packToPrompt(p), safeFileName(p.mapName)+'_roblox_prompt.txt'); render(); });
+    els.downloadJsonBtn.addEventListener('click',()=>{ const p=lastExportPack||buildExportPack(); downloadTextFile(packToAiJson(p), safeFileName(p.mapName)+'_ai_roblox_data.json', 'application/json'); render(); });
+    els.downloadCsvBtn.addEventListener('click',()=>{ const p=lastExportPack||buildExportPack(); downloadTextFile(packToCsv(p), safeFileName(p.mapName)+'_grid_cells.csv', 'text/csv'); render(); });
+    els.downloadLuaBtn.addEventListener('click',()=>{ const p=lastExportPack||buildExportPack(); downloadTextFile(packToLua(p), safeFileName(p.mapName)+'_roblox_grid.lua', 'text/plain'); render(); });
+    els.downloadHeightMapBtn.addEventListener('click',downloadHeightBiomeMap);
+    document.getElementById('downloadTerrainColorMapBtn')?.addEventListener('click', downloadTerrainColorMap);
+    document.getElementById('downloadTerrainHeightmapBtn')?.addEventListener('click', downloadTerrainHeightmap);
+    document.getElementById('downloadTerrainImagePackBtn')?.addEventListener('click', downloadTerrainImagePack);
+    els.exportTabPrompt.addEventListener('click',()=>setExportViewMode('prompt'));
+    els.exportTabData.addEventListener('click',()=>setExportViewMode('data'));
+    els.exportTabLua.addEventListener('click',()=>setExportViewMode('lua'));
+    ['emptyCellPreset','emptyCellColor','emptyPngMode'].forEach(id=>{
+      if(els[id]) els[id].addEventListener('change',()=>{
+        state.emptyCellPreset = els.emptyCellPreset?.value || state.emptyCellPreset || 'transparent';
+        state.emptyCellColor = els.emptyCellColor?.value || state.emptyCellColor || '#5f9650';
+        state.emptyPngMode = els.emptyPngMode?.value || state.emptyPngMode || 'transparent';
+        render();
+        markProjectChanged();
+        if(lastExportPack) generatePromptExport();
+      });
+    });
+    ['studsPerCell','maxHeightStuds','exportDetailMode','exportSubdiv','partThickness','seaLevelStuds','originMode','smoothMode','analysisMode','exportScope'].forEach(id=>els[id].addEventListener('change',()=>{ if(lastExportPack) generatePromptExport(); }));
     els.zoom.addEventListener('input',()=>setZoom(Number(els.zoom.value)));
     els.zoomInBtn.addEventListener('click',()=>setZoom(Number(els.zoom.value)+10));
     els.zoomOutBtn.addEventListener('click',()=>setZoom(Number(els.zoom.value)-10));
     els.selectToggleBtn.addEventListener('click',()=>{ els.selectionEnabled.value=els.selectionEnabled.value==='on'?'off':'on'; syncSelectBtn(); render(); });
     els.selectionEnabled.addEventListener('change',()=>{syncSelectBtn();render();});
     ['gridGlobalMode','showMajorGrid','majorColor','selectLevel'].forEach(id=>els[id].addEventListener('change',render));
-    els.addMinorGridBtn.addEventListener('click',()=>{ const n=state.minorGrids.length+1; state.minorGrids.push({id:makeId(),name:`ตารางย่อย ${n}`,enabled:true,color:'#ff3333',spacing:10,unit:'px',subdiv:2}); renderMinorGridList(); render(); markProjectChanged(); });
+    els.addMinorGridBtn.addEventListener('click',()=>{ saveHistory('add-minor-grid'); const n=state.minorGrids.length+1; state.minorGrids.push({id:makeId(),name:`ตารางย่อย ${n}`,enabled:true,color:'#ff3333',spacing:10,unit:'px',subdiv:2}); renderMinorGridList(); render(); markProjectChanged(); });
+
+    canvas.addEventListener('dragover', e=>{
+      e.preventDefault();
+      canvasStage?.classList.add('dragOver');
+    });
+    canvas.addEventListener('dragleave', ()=>canvasStage?.classList.remove('dragOver'));
+    canvas.addEventListener('drop', async e=>{
+      e.preventDefault();
+      canvasStage?.classList.remove('dragOver');
+      const file = e.dataTransfer?.files?.[0];
+      if(!file || !file.type.startsWith('image/')) return toast('กรุณาวางไฟล์รูปภาพ', 'warn');
+      const p = pointerPos(e), k = keyFromPos(p.x,p.y);
+      if(!k) return toast('วางรูปนอกพื้นที่ตาราง', 'warn');
+      saveHistory('drop-image');
+      const img = await loadImage(file);
+      if(!img) return toast('อ่านรูปไม่สำเร็จ', 'error');
+      const cell = parseKey(k);
+      state.cells[cell.row][cell.col] = img;
+      state.selected.clear();
+      state.selected.add(keyOf(cell.col, cell.row));
+      render(); markProjectChanged(); toast('วางรูปลงช่องแล้ว', 'success');
+    });
+
+    document.addEventListener('keydown', e=>{
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      if(['input','textarea','select'].includes(tag)) return;
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
+      else if((e.ctrlKey || e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))){ e.preventDefault(); redo(); }
+      else if(e.key === 'Delete' || e.key === 'Backspace'){ if(state.selected.size){ e.preventDefault(); deleteSelected(); } }
+      else if(e.key === '+' || e.key === '='){ setZoom(Number(els.zoom.value)+10); }
+      else if(e.key === '-' || e.key === '_'){ setZoom(Number(els.zoom.value)-10); }
+      else if(e.key.toLowerCase() === 'm'){ miniMapEnabled = !miniMapEnabled; miniMap?.classList.toggle('show', miniMapEnabled); updateMiniMap(); }
+      else if(e.key === 'Escape'){ closeSheet(); }
+    });
 
     canvas.addEventListener('pointerdown',e=>{
       if(isViewMode()) return;
       if(activePointers.size >= 2) return;
       e.preventDefault(); const p=pointerPos(e), k=keyFromPos(p.x,p.y); if(!k)return;
-      if(els.selectMode.value==='click'){ state.selected.has(k)?state.selected.delete(k):state.selected.add(k); render(); }
+      if(els.selectMode.value==='click'){ if(!e.shiftKey && !e.ctrlKey && !e.metaKey){} state.selected.has(k)?state.selected.delete(k):state.selected.add(k); render(); }
       else { state.dragStart=k; selectRange(k,k); }
     });
     canvas.addEventListener('pointermove',e=>{
@@ -1325,48 +3086,364 @@
     });
     window.addEventListener('pointerup',()=>state.dragStart=null);
 
+    // View Mode gestures: จับ event ที่ workspace แทน canvasWrap
+    // เพื่อให้สองนิ้วเลื่อน/ซูมได้แม้นิ้วแตะพื้นที่ว่างรอบรูป
     workspace.addEventListener('pointerdown', e => {
       if(!isViewMode()) return;
+
       e.preventDefault();
       activePointers.set(e.pointerId, e);
       try { workspace.setPointerCapture(e.pointerId); } catch {}
+
+      if(activePointers.size === 1){
+        singlePanState = { pointerId:e.pointerId, x:e.clientX, y:e.clientY, panX, panY };
+      }
       if(activePointers.size === 2) startPinch();
     }, { passive: false });
 
     workspace.addEventListener('pointermove', e => {
       if(!isViewMode()) return;
       if(!activePointers.has(e.pointerId)) return;
+
       e.preventDefault();
       activePointers.set(e.pointerId, e);
+
       if(activePointers.size >= 2){
+        singlePanState = null;
         if(!pinchState) startPinch();
         updatePinch();
+      } else if(activePointers.size === 1 && singlePanState && singlePanState.pointerId === e.pointerId){
+        panX = singlePanState.panX + (e.clientX - singlePanState.x);
+        panY = singlePanState.panY + (e.clientY - singlePanState.y);
+        applyCanvasTransform(false);
       }
     }, { passive: false });
 
     function clearPointer(e){
       if(activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
+
       if(activePointers.size < 2){
         pinchState = null;
+        singlePanState = null;
         wrap.classList.add('smooth');
         setTimeout(() => wrap.classList.remove('smooth'), 180);
         return;
       }
+
       if(isViewMode()) startPinch();
     }
 
     workspace.addEventListener('pointerup', clearPointer, { passive: false });
     workspace.addEventListener('pointercancel', clearPointer, { passive: false });
     workspace.addEventListener('lostpointercapture', clearPointer, { passive: false });
+
     window.addEventListener('resize', () => setTimeout(centerCanvas, 80));
+
+
+
+    /* ===== UX Pro Mode / i18n / Progressive Disclosure Layer ===== */
+    const UX_I18N = {
+      th: {
+        appTitle:'Image Grid Builder', statusReady:'พร้อมใช้งาน', modeBasic:'Basic', modePro:'Pro', langTH:'TH', langEN:'EN', menu:'เมนู',
+        heroTitle:'เริ่มจาก 3 ขั้นตอน', heroText:'หน้าเว็บนี้ถูกจัดใหม่ให้ใช้พื้นฐานก่อน แล้วค่อยเปิดเครื่องมือขั้นสูงเมื่อต้อง Export ไป Roblox',
+        step1:'สร้างตาราง', step1Text:'กำหนดจำนวนช่องและขนาดต่อช่อง', step2:'ใส่ภาพ', step2Text:'อัปโหลดแบบแยกภาพเดียวหรือใส่รายช่อง', step3:'ส่งออก', step3Text:'เลือกโหมด Export แล้วค่อยเปิด Advanced',
+        advancedExport:'Advanced Export Settings', advancedHint:'เปิดเฉพาะตอนต้องปรับความสูง น้ำ วัสดุ หรือสคริปต์ Roblox แบบละเอียด',
+        basicExport:'Recommended Export', copyPreview:'Copy Preview', copyLua:'Copy Lua Code', exportModeHint:'Major = เร็ว/หยาบ, Subdiv = ละเอียด/หนักเครื่อง', scopeHint:'All = ส่งออกทั้งแมพ, Selected = เฉพาะช่องที่เลือกไว้', studsHint:'ขนาด Roblox ต่อช่องใหญ่ ยิ่งมากแมพยิ่งกว้าง', subdivHint:'จำนวนช่องย่อยต่อ 1 ช่องใหญ่ ยิ่งมากยิ่งละเอียดแต่ tile เยอะ',
+        copied:'คัดลอกแล้ว', basicOn:'เปิด Basic Mode แล้ว', proOn:'เปิด Pro Mode แล้ว', langChanged:'เปลี่ยนภาษาแล้ว'
+      },
+      en: {
+        appTitle:'Image Grid Builder', statusReady:'Ready', modeBasic:'Basic', modePro:'Pro', langTH:'TH', langEN:'EN', menu:'Menu',
+        heroTitle:'Start in 3 steps', heroText:'The app now keeps the basic workflow visible first, while advanced Roblox export controls stay tucked away until needed.',
+        step1:'Build grid', step1Text:'Set rows, columns, and cell size', step2:'Place images', step2Text:'Split one image or fill selected cells', step3:'Export', step3Text:'Choose export mode, then open Advanced',
+        advancedExport:'Advanced Export Settings', advancedHint:'Open this only when adjusting height, sea level, materials, or Roblox script details.',
+        basicExport:'Recommended Export', copyPreview:'Copy Preview', copyLua:'Copy Lua Code', exportModeHint:'Major = fast/coarse, Subdiv = detailed/heavier', scopeHint:'All = whole map, Selected = selected cells only', studsHint:'Roblox size per major cell. Higher means a wider map.', subdivHint:'Sub-cells per major cell. Higher means more detail and more tiles.',
+        copied:'Copied', basicOn:'Basic Mode enabled', proOn:'Pro Mode enabled', langChanged:'Language changed'
+      }
+    };
+    let uxLang = localStorage.getItem('uxLang') || 'th';
+    let uxMode = localStorage.getItem('uxMode') || 'basic';
+    function uxT(k){ return (UX_I18N[uxLang] && UX_I18N[uxLang][k]) || UX_I18N.th[k] || k; }
+    function uxWrapField(id, helpKey){
+      const el = document.getElementById(id); if(!el) return null;
+      const box = el.closest('div'); if(!box || box.dataset.uxWrapped) return box;
+      box.dataset.uxWrapped = '1';
+      if(helpKey){
+        const help = document.createElement('div'); help.className='uxHelp'; help.dataset.uxHelp=helpKey; help.textContent=uxT(helpKey); box.appendChild(help);
+        const label = box.querySelector('label'); if(label) label.title = uxT(helpKey);
+      }
+      return box;
+    }
+    function enhanceProfessionalUX(){
+      document.body.classList.add('ux-pro-refactor');
+      if(!document.querySelector('.topbarActions')){
+        const topbar = document.querySelector('.topbar');
+        const actions = document.createElement('div'); actions.className='topbarActions';
+        actions.innerHTML = `
+          <div class="pillToggle" aria-label="Mode">
+            <button type="button" id="uxBasicBtn">Basic</button><button type="button" id="uxProBtn">Pro</button>
+          </div>
+          <div class="pillToggle" aria-label="Language">
+            <button type="button" id="uxThBtn">TH</button><button type="button" id="uxEnBtn">EN</button>
+          </div>
+        `;
+        topbar.appendChild(actions);
+      }
+      const setupPage = document.querySelector('[data-page="setup"]');
+      if(setupPage && !document.getElementById('uxHero')){
+        const hero = document.createElement('div'); hero.id='uxHero'; hero.className='uxHero';
+        hero.innerHTML = `<h2 data-ux="heroTitle"></h2><p data-ux="heroText"></p><div class="uxSteps"><div class="uxStep"><b data-ux="step1"></b><span data-ux="step1Text"></span></div><div class="uxStep"><b data-ux="step2"></b><span data-ux="step2Text"></span></div><div class="uxStep"><b data-ux="step3"></b><span data-ux="step3Text"></span></div></div>`;
+        setupPage.prepend(hero);
+      }
+      const exportPanel = document.querySelector('.exportPanel');
+      const exportGrid = exportPanel?.querySelector('.exportGrid');
+      if(exportPanel && exportGrid && !document.getElementById('uxExportBasicBox')){
+        const header = document.createElement('div'); header.className='uxSectionTitle'; header.id='uxExportBasicBox'; header.dataset.ux='basicExport';
+        exportGrid.parentNode.insertBefore(header, exportGrid);
+        const basic = document.createElement('div'); basic.className='uxBasicGrid';
+        const adv = document.createElement('details'); adv.className='uxAdvancedBox proOnly';
+        adv.innerHTML = `<summary><span data-ux="advancedExport"></span><span class="uxBadge warn">Pro</span></summary><div class="uxInlineHint" data-ux="advancedHint"></div><div class="uxAdvancedGrid"></div>`;
+        exportGrid.parentNode.insertBefore(basic, exportGrid);
+        exportGrid.parentNode.insertBefore(adv, exportGrid.nextSibling);
+        const basicIds = ['exportDetailMode','exportScope','studsPerCell','exportSubdiv'];
+        const advIds = ['maxHeightStuds','partThickness','seaLevelStuds','originMode','smoothMode','analysisMode','exportMapName'];
+        basicIds.forEach(id=>{ const box=uxWrapField(id, id==='exportDetailMode'?'exportModeHint':id==='exportScope'?'scopeHint':id==='studsPerCell'?'studsHint':id==='exportSubdiv'?'subdivHint':null); if(box) basic.appendChild(box); });
+        const advGrid = adv.querySelector('.uxAdvancedGrid');
+        advIds.forEach(id=>{ const box=uxWrapField(id); if(box) advGrid.appendChild(box); });
+        exportGrid.remove();
+      }
+      const txt = els.promptPreview;
+      if(txt && !document.getElementById('uxCopyPreviewBtn')){
+        const row = document.createElement('div'); row.className='uxCopyRow';
+        row.innerHTML = `<button id="uxCopyPreviewBtn" type="button"></button><button id="uxCopyLuaBtn" type="button"></button>`;
+        txt.parentNode.insertBefore(row, txt);
+        row.querySelector('#uxCopyPreviewBtn').addEventListener('click',()=>copyText(els.promptPreview.value || ''));
+        row.querySelector('#uxCopyLuaBtn').addEventListener('click',()=>{ const p=lastExportPack||buildExportPack(); copyText(packToLua(p)); });
+      }
+      const expHint = exportPanel?.querySelector('.warningBox');
+      if(expHint && !document.getElementById('uxExportModeHint')){
+        const hint = document.createElement('div'); hint.id='uxExportModeHint'; hint.className='uxInlineHint';
+        hint.innerHTML = `<span class="uxBadge good">Major</span> เหมาะกับแมพใหญ่ / <span class="uxBadge warn">Subdiv</span> เหมาะกับพื้นที่ละเอียด เฉพาะโซนที่เลือก`;
+        expHint.parentNode.insertBefore(hint, expHint);
+      }
+      document.getElementById('uxBasicBtn')?.addEventListener('click',()=>setUxMode('basic'));
+      document.getElementById('uxProBtn')?.addEventListener('click',()=>setUxMode('pro'));
+      document.getElementById('uxThBtn')?.addEventListener('click',()=>setUxLang('th'));
+      document.getElementById('uxEnBtn')?.addEventListener('click',()=>setUxLang('en'));
+      ['exportDetailMode','exportScope'].forEach(id=>document.getElementById(id)?.addEventListener('change',updateExportMicrocopy));
+      setUxMode(uxMode, true); setUxLang(uxLang, true); updateExportMicrocopy();
+    }
+    function setUxMode(mode, silent=false){
+      uxMode = mode === 'pro' ? 'pro' : 'basic'; localStorage.setItem('uxMode', uxMode);
+      document.body.classList.toggle('basic-mode', uxMode==='basic'); document.body.classList.toggle('pro-mode', uxMode==='pro');
+      document.getElementById('uxBasicBtn')?.classList.toggle('active', uxMode==='basic'); document.getElementById('uxProBtn')?.classList.toggle('active', uxMode==='pro');
+      if(!silent) toast(uxMode==='basic'?uxT('basicOn'):uxT('proOn'), 'success');
+    }
+    function setUxLang(lang, silent=false){
+      uxLang = lang === 'en' ? 'en' : 'th'; localStorage.setItem('uxLang', uxLang);
+      document.documentElement.lang = uxLang;
+      document.getElementById('uxThBtn')?.classList.toggle('active', uxLang==='th'); document.getElementById('uxEnBtn')?.classList.toggle('active', uxLang==='en');
+      document.querySelectorAll('[data-ux]').forEach(el=>{ el.textContent = uxT(el.dataset.ux); });
+      document.querySelectorAll('[data-ux-help]').forEach(el=>{ el.textContent = uxT(el.dataset.uxHelp); });
+      const copyPreview = document.getElementById('uxCopyPreviewBtn'); if(copyPreview) copyPreview.textContent = uxT('copyPreview');
+      const copyLua = document.getElementById('uxCopyLuaBtn'); if(copyLua) copyLua.textContent = uxT('copyLua');
+      const menuBtn = document.getElementById('openMenuBtn'); if(menuBtn) menuBtn.textContent = uxT('menu');
+      if(!silent) toast(uxT('langChanged'), 'info');
+    }
+    function updateExportMicrocopy(){
+      const hint = document.getElementById('uxExportModeHint'); if(!hint) return;
+      const detail = els.exportDetailMode?.value || 'subdiv'; const scope = els.exportScope?.value || 'all';
+      if(uxLang === 'en'){
+        hint.innerHTML = detail==='major'
+          ? `<span class="uxBadge good">Major</span> fast export: one big cell becomes one Roblox block. Scope: <b>${scope}</b>.`
+          : `<span class="uxBadge warn">Subdiv</span> detailed export: each major cell is split into smaller tiles. Use Selected for heavy zones. Scope: <b>${scope}</b>.`;
+      } else {
+        hint.innerHTML = detail==='major'
+          ? `<span class="uxBadge good">Major</span> ส่งออกเร็ว: 1 ช่องใหญ่ = 1 บล็อก Roblox ใช้กับแมพใหญ่ได้ดี | Scope: <b>${scope}</b>`
+          : `<span class="uxBadge warn">Subdiv</span> ส่งออกละเอียด: 1 ช่องใหญ่แตกเป็นช่องย่อย เหมาะกับโซนสำคัญ ถ้าหนักให้ใช้ Selected | Scope: <b>${scope}</b>`;
+      }
+    }
+
+    
+
+    /* ===== Professional Reasoned Copy: every visible section explains why it exists ===== */
+    function addReasonAfter(target, text){
+      if(!target || !text) return;
+      const parent = target.parentElement;
+      if(!parent) return;
+      const existing = parent.querySelector(':scope > .proReason[data-for="'+(target.id||target.textContent.trim().slice(0,24))+'"]');
+      if(existing){ existing.textContent = text; return; }
+      const div = document.createElement('div');
+      div.className = 'proReason';
+      div.dataset.for = target.id || target.textContent.trim().slice(0,24);
+      div.textContent = text;
+      target.insertAdjacentElement('afterend', div);
+    }
+    function setTextById(id, value){ const el=document.getElementById(id); if(el) el.textContent=value; }
+    function setPlaceholder(id, value){ const el=document.getElementById(id); if(el) el.placeholder=value; }
+    function setLabelForInput(inputId, value){
+      const input=document.getElementById(inputId); if(!input) return;
+      const box=input.closest('div') || input.parentElement;
+      const label=box?.querySelector('label'); if(label) label.textContent=value;
+    }
+    function enhanceReasonedPublicCopy(){
+      document.body.classList.add('reasoned-pro');
+      document.title = 'Image Grid Builder Studio - Professional Terrain Export';
+
+      const h1 = document.querySelector('#homeScreen h1');
+      if(h1) h1.textContent = 'Image Grid Builder Studio';
+      const intro = document.querySelector('#homeScreen .homeCard > p');
+      if(intro) intro.textContent = 'สร้างตารางภาพ จัดการช่องว่าง และส่งออกข้อมูลสำหรับ Roblox Studio โดยออกแบบให้ตรวจสอบเหตุผลของแต่ละขั้นตอนได้ชัดเจน';
+      const authTitle = document.querySelector('#authBox h2');
+      if(authTitle) authTitle.textContent = 'เข้าใช้งาน / สร้างบัญชี';
+      setLabelForInput('authEmail','ID ผู้ใช้งาน');
+      setLabelForInput('authPassword','รหัสผ่าน');
+      setPlaceholder('authEmail','ใช้ตัวอักษร a-z, ตัวเลข, _ หรือ - อย่างน้อย 4 ตัว');
+      setPlaceholder('authPassword','อย่างน้อย 6 ตัว ใช้สำหรับแยกเจ้าของโปรเจกต์');
+      setTextById('signInBtn','เข้าสู่ระบบ');
+      setTextById('registerBtn','สร้างบัญชี');
+      setTextById('authStatus','ยังไม่ได้เข้าสู่ระบบ');
+      addReasonAfter(document.getElementById('authStatus'),'ระบบบัญชีช่วยแยกโปรเจกต์ของแต่ละคนและรองรับการโหลดงานล่าสุดกลับมาใช้งานต่อ');
+
+      setLabelForInput('projectNameInput','ชื่อโปรเจกต์');
+      setTextById('createProjectBtn','สร้างโปรเจกต์ใหม่');
+      setLabelForInput('joinCodeInput','รหัสเข้าร่วมโปรเจกต์');
+      setPlaceholder('joinCodeInput','ตัวอย่าง ABCD-1234');
+      setTextById('joinProjectBtn','เข้าร่วมด้วยรหัส');
+      setTextById('loadCloudProjectBtn','โหลดโปรเจกต์ล่าสุด');
+      setTextById('exportProjectFileBtn','สำรองโปรเจกต์เป็นไฟล์ JSON');
+      addReasonAfter(document.getElementById('exportProjectFileBtn'),'ไฟล์สำรองช่วยกู้คืนงานได้ แม้การเชื่อมต่อฐานข้อมูลหรือรหัสห้องมีปัญหา');
+
+      const topTitle=document.querySelector('.topbar b'); if(topTitle) topTitle.textContent='Image Grid Builder Studio';
+      setTextById('statusText','พร้อมทำงาน');
+      setTextById('openMenuBtn','เมนู');
+      setTextById('lodStatusTitle','รายละเอียดภาพพร้อมแล้ว');
+      setTextById('lodQueueText','คิวประมวลผล: 0');
+      setTextById('lodModeText','สถานะ: พร้อมใช้งาน');
+      setTextById('lodVisibleText','ช่องที่มองเห็น: -');
+
+      document.querySelectorAll('[data-tab="setup"],[data-open-tab="setup"]').forEach(e=>e.textContent='ตั้งค่า');
+      document.querySelectorAll('[data-tab="layer"],[data-open-tab="layer"]').forEach(e=>e.textContent='เลือกพื้นที่');
+      document.querySelectorAll('[data-tab="grid"],[data-open-tab="grid"]').forEach(e=>e.textContent='เส้นตาราง');
+      document.querySelectorAll('[data-tab="export"],[data-open-tab="export"]').forEach(e=>e.textContent='ส่งออก');
+      document.querySelectorAll('[data-tab="share"]').forEach(e=>e.textContent='โปรเจกต์');
+
+      setLabelForInput('cols','จำนวนคอลัมน์');
+      setLabelForInput('rows','จำนวนแถว');
+      setLabelForInput('cellW','ความกว้างต่อช่อง (px)');
+      setLabelForInput('cellH','ความสูงต่อช่อง (px)');
+      setTextById('buildBtn','สร้างตารางจากค่าปัจจุบัน');
+      addReasonAfter(document.getElementById('buildBtn'),'การกำหนดจำนวนช่องและขนาดก่อนใส่ภาพช่วยให้ตำแหน่งช่องตรงกับการส่งออกไป Roblox ภายหลัง');
+      const emptyTitle=[...document.querySelectorAll('.card h2')].find(x=>x.textContent.includes('ช่องว่าง'));
+      if(emptyTitle) emptyTitle.textContent='ค่าเริ่มต้นของช่องว่าง';
+      setLabelForInput('emptyCellColor','สีสำหรับช่องว่างหรือวัสดุแบบกำหนดเอง');
+      const emptyPreset=document.getElementById('emptyCellPreset');
+      if(emptyPreset){
+        emptyPreset.options[0].text='โปร่งใส — ไม่วิเคราะห์เป็นพื้น';
+        emptyPreset.options[1].text='หญ้า — ใช้กับพื้นที่ธรรมชาติ';
+        emptyPreset.options[2].text='ทราย — ใช้กับชายหาดหรือทะเลทราย';
+        emptyPreset.options[3].text='น้ำ — ใช้กับทะเล แม่น้ำ หรือบึง';
+        emptyPreset.options[4].text='หิน — ใช้กับภูเขาหรือหน้าผา';
+        emptyPreset.options[5].text='ดิน — ใช้กับพื้นทั่วไป';
+        emptyPreset.options[6].text='หิมะ — ใช้กับพื้นที่หนาว';
+        emptyPreset.options[7].text='กำหนดเอง — ใช้สีที่เลือกเอง';
+      }
+      addReasonAfter(emptyPreset,'ช่องที่ไม่มีรูปไม่ควรถูกเดาเป็นหญ้าอัตโนมัติ เพราะจะทำให้ข้อมูล biome และ export ผิดจากที่ตั้งใจ');
+
+      const modeTitle=[...document.querySelectorAll('.card h2')].find(x=>x.textContent.includes('โหมดภาพ'));
+      if(modeTitle) modeTitle.textContent='วิธีนำภาพเข้าสู่ตาราง';
+      const mode=document.getElementById('mode');
+      if(mode){ mode.options[0].text='รวมภาพหลายช่อง — ใส่ภาพเฉพาะช่องที่เลือก'; mode.options[1].text='แยกภาพเดียว — ตัดภาพให้พอดีกับตาราง'; }
+      setTextById('fillSelectedBtn','นำภาพไปใช้กับช่องที่เลือก');
+      setTextById('splitBtn','แยกภาพเข้าทุกช่องตามตาราง');
+      addReasonAfter(mode,'เลือกวิธีนำภาพเข้าตามลักษณะงาน: แผนที่ที่ตัดเป็นชิ้นใช้โหมดรวมภาพ ส่วนภาพใหญ่ภาพเดียวใช้โหมดแยกภาพ');
+
+      setLabelForInput('selectionEnabled','สถานะการเลือกพื้นที่');
+      setLabelForInput('selectMode','วิธีเลือกช่อง');
+      setLabelForInput('selectLevel','ระดับรายละเอียดที่เลือก');
+      setTextById('undoBtn','ย้อนกลับ');
+      setTextById('redoBtn','ทำซ้ำ');
+      setTextById('selectAllBtn','เลือกทั้งหมด');
+      setTextById('toggleMiniMapBtn','เปิด/ปิดแผนที่ย่อ');
+      setTextById('clearSelectionBtn','ล้างพื้นที่ที่เลือก');
+      setTextById('deleteSelectedBtn','ลบข้อมูลในพื้นที่ที่เลือก');
+      addReasonAfter(document.getElementById('selectionEnabled'),'แยกโหมดเลือกกับโหมดดูภาพเพื่อลดการแตะผิด โดยเฉพาะบนมือถือที่ต้องซูมและเลื่อนบ่อย');
+      addReasonAfter(document.getElementById('deleteSelectedBtn'),'คำสั่งลบจำกัดเฉพาะพื้นที่ที่เลือก เพื่อป้องกันการลบภาพทั้งโปรเจกต์โดยไม่ตั้งใจ');
+
+      setLabelForInput('gridGlobalMode','รูปแบบการแสดงเส้นตาราง');
+      setLabelForInput('showMajorGrid','เส้นตารางหลัก');
+      setLabelForInput('majorGridName','ชื่อตารางหลัก');
+      setLabelForInput('majorColor','สีเส้นตารางหลัก');
+      setTextById('addMinorGridBtn','เพิ่มเส้นตารางย่อย');
+      addReasonAfter(document.getElementById('gridGlobalMode'),'เส้นตารางช่วยตรวจสอบตำแหน่งและสเกลก่อนส่งออก แต่สามารถปิดได้เมื่อต้องการภาพสะอาด');
+
+      setLabelForInput('zoom','ขนาดแสดงผลตัวอย่าง');
+      const exportGridMode=document.getElementById('exportGridMode');
+      if(exportGridMode){ exportGridMode.options[0].text='รวมเส้นตารางในภาพ'; exportGridMode.options[1].text='ไม่รวมเส้นตารางในภาพ'; }
+      const emptyPngMode=document.getElementById('emptyPngMode');
+      if(emptyPngMode){ emptyPngMode.options[0].text='โปร่งใสจริง สำหรับนำไปซ้อนภาพอื่น'; emptyPngMode.options[1].text='ถมสีขาว สำหรับดูง่ายหรือพิมพ์'; emptyPngMode.options[2].text='ถมตามวัสดุ เพื่อให้ภาพตรงกับ export'; }
+      setTextById('downloadAllBtn','ดาวน์โหลดภาพรวม PNG');
+      setTextById('downloadSelectedBtn','ดาวน์โหลดเฉพาะพื้นที่ที่เลือก');
+      addReasonAfter(emptyPngMode,'การเลือกพื้นหลังตอนดาวน์โหลดมีผลต่อการนำภาพไปใช้ต่อ เช่น preview, texture, หรือ heightmap');
+
+      const robloxTitle=[...document.querySelectorAll('.exportPanel h2')][0]; if(robloxTitle) robloxTitle.textContent='Roblox Terrain Export Studio';
+      const robloxHint=document.querySelector('.exportPanel > .hint');
+      if(robloxHint) robloxHint.textContent='แปลงภาพตารางเป็นข้อมูลที่ตรวจสอบได้ เช่น Prompt, JSON, CSV, Heightmap และ Lua Script สำหรับใช้ต่อใน Roblox Studio';
+      setLabelForInput('studsPerCell','ขนาดต่อช่องใหญ่ใน Roblox (studs)');
+      setLabelForInput('maxHeightStuds','ความสูงสูงสุดของภูมิประเทศ (studs)');
+      setLabelForInput('exportDetailMode','ระดับรายละเอียดการส่งออก');
+      setLabelForInput('exportSubdiv','จำนวนช่องย่อยต่อช่องใหญ่');
+      setLabelForInput('partThickness','ความหนา Part');
+      setLabelForInput('seaLevelStuds','ระดับน้ำทะเล (studs)');
+      setLabelForInput('originMode','ตำแหน่งจุดเริ่มต้นของแมพ');
+      setLabelForInput('smoothMode','การเกลี่ยความสูง');
+      setLabelForInput('analysisMode','วิธีประเมินความสูงจากภาพ');
+      setLabelForInput('exportScope','ขอบเขตการส่งออก');
+      setLabelForInput('exportMapName','ชื่อแมพสำหรับไฟล์ส่งออก');
+      setTextById('generatePromptBtn','วิเคราะห์ภาพและสร้างชุดข้อมูล Roblox');
+      setTextById('exportSummary','ยังไม่ได้วิเคราะห์ข้อมูลส่งออก');
+      if(document.getElementById('promptPreview')) document.getElementById('promptPreview').placeholder='กดวิเคราะห์ภาพก่อน ระบบจึงจะสร้าง Prompt และข้อมูลส่งออก';
+      setTextById('downloadPromptBtn','ดาวน์โหลด Prompt .txt');
+      setTextById('downloadJsonBtn','ดาวน์โหลด Data .json');
+      setTextById('downloadCsvBtn','ดาวน์โหลด Table .csv');
+      setTextById('downloadLuaBtn','ดาวน์โหลด Studio Script .lua');
+      setTextById('downloadHeightMapBtn','ดาวน์โหลดภาพ Preview Height/Biome');
+      setTextById('downloadTerrainColorMapBtn','ดาวน์โหลด Color Map PNG');
+      setTextById('downloadTerrainHeightmapBtn','ดาวน์โหลด Heightmap PNG');
+      setTextById('downloadTerrainImagePackBtn','ดาวน์โหลดชุดภาพ Terrain');
+      addReasonAfter(document.getElementById('generatePromptBtn'),'ต้องวิเคราะห์ก่อนส่งออก เพราะระบบต้องอ่านสี ความสว่าง น้ำ วัสดุ และสเกล เพื่อนำไปสร้างข้อมูลที่ Roblox เข้าใจได้');
+      const warning=document.querySelector('.warningBox');
+      if(warning) warning.textContent='ข้อควรระวัง: ความสูงที่ได้เป็นการประมาณจากภาพ 2D ไม่ใช่ข้อมูลภูมิประเทศจริง ควรใช้เป็น draft แล้วตรวจแก้ใน Roblox Studio ก่อนใช้ในงานจริง';
+
+      setTextById('projectStatus','ยังไม่มีโปรเจกต์ที่เชื่อมอยู่');
+      setTextById('saveProjectBtn','บันทึกโปรเจกต์ในเครื่อง');
+      setTextById('copyProjectBtn','คัดลอกโปรเจกต์เป็นข้อความ');
+      setTextById('backHomeBtn','กลับหน้าเริ่มต้น');
+      setTextById('copyShareLinkBtn','คัดลอกลิงก์โปรเจกต์');
+      setTextById('generateCodeBtn','สร้างรหัสแชร์ใหม่');
+      setTextById('toggleCodeBtn','เปิด/ปิดรหัสแชร์');
+      setTextById('shareCodeBox','ยังไม่มีรหัสแชร์');
+      addReasonAfter(document.getElementById('saveProjectBtn'),'การบันทึกในเครื่องเหมาะกับงานส่วนตัว ส่วนรหัสแชร์เหมาะกับงานที่ต้องส่งต่อให้คนอื่นเข้ามาดูหรือแก้ไข');
+
+      if(!document.getElementById('proHomeBanner')){
+        const banner=document.createElement('div'); banner.id='proHomeBanner'; banner.className='proBanner';
+        banner.innerHTML='<div class="proBannerTitle">ออกแบบเพื่อสร้างแผนที่แบบตรวจสอบย้อนกลับได้</div><div class="proBannerText">ทุกขั้นตอนแยกเหตุผลชัดเจน: ตั้งค่าตารางก่อน ใส่ภาพตามพื้นที่จริง แล้วจึงส่งออกข้อมูลสำหรับ Roblox เพื่อป้องกันสเกลเพี้ยนและลดการแก้ซ้ำ</div><div class="proStatePill">Professional Copy Enabled</div>';
+        const card=document.querySelector('#homeScreen .homeCard'); if(card) card.insertBefore(banner, card.children[1]);
+      }
+    }
+
+
+    enhanceProfessionalUX();
+    enhanceReasonedPublicCopy();
 
     renderMinorGridList();
     buildGrid();
     setZoom(80);
     syncSelectBtn();
     showHome();
-
     onAuthChanged(null);
+    renderRoomShortcuts();
+    updateHistoryButtons();
+    updateMiniMap();
 
     window.addEventListener('load', async () => {
       const hash = new URLSearchParams(location.hash.replace('#',''));
@@ -1378,16 +3455,21 @@
           if(data){
             await loadProjectData(data);
             currentProject.id = projectId;
-            currentProject.owner = data.project?.ownerUid === uid();
+            currentProject.owner = false;
             currentProject.realtimeEnabled = true;
             subscribeProject(projectId);
-            if(currentProject.owner) startHostPresence();
             showApp();
             openSheet('setup');
           }
         } catch(err){
-          alert('เปิดลิงก์โปรเจกต์ไม่สำเร็จ: ' + err.message);
+          toast('เปิดลิงก์โปรเจกต์ไม่สำเร็จ: ' + err.message, 'error');
         }
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if(currentProject.owner && currentProject.id){
+        setHostOnline(currentProject.id, false);
       }
     });
 
@@ -1400,6 +3482,6 @@
         });
       }
     });
-  </script>
-</body>
+
+  </script></body>
 </html>
