@@ -1671,8 +1671,12 @@ body.mega-child-local #projectStatus::after{
           <button id="megaExportJsonBtn" class="secondary" type="button">Mega Data .json</button>
         </div>
         <div class="megaActions">
-          <button id="megaExportLuaBtn" class="good" type="button">Mega Roblox Lua .lua</button>
+          <button id="megaDownloadMergedImageBtn" class="good" type="button">ดาวน์โหลดภาพรวม Mega PNG</button>
           <button id="megaExportBackupBtn" class="secondary" type="button">สำรอง Mega Project .json</button>
+        </div>
+        <div class="megaActions">
+          <button id="megaExportLuaBtn" class="good" type="button">Mega Roblox Lua .lua</button>
+          <button class="secondary" type="button" disabled>รวมภาพใช้ปุ่มสีเขียวด้านบน</button>
         </div>
         <label>นำเข้า Mega Project สำรอง</label>
         <input id="megaImportBackupInput" type="file" accept="application/json,.json">
@@ -4913,6 +4917,106 @@ window.addEventListener('DOMContentLoaded', () => {
       toast?.('ส่งออก Mega Project แล้ว','success');
     }catch(e){ console.error(e); toast?.('ส่งออก Mega Project ไม่สำเร็จ: '+e.message,'error'); }
   }
+
+  async function renderChildProjectCanvas(data, imageCache){
+    const cols = Math.max(1, Number(data?.grid?.cols || 1));
+    const rows = Math.max(1, Number(data?.grid?.rows || 1));
+    const cellW = Math.max(1, Number(data?.grid?.cellW || 160));
+    const cellH = Math.max(1, Number(data?.grid?.cellH || 160));
+    const out = document.createElement('canvas');
+    out.width = cols * cellW;
+    out.height = rows * cellH;
+    const o = out.getContext('2d', { alpha:false });
+    o.fillStyle = '#ffffff';
+    o.fillRect(0,0,out.width,out.height);
+
+    const images = data?.images || [];
+    const assets = data?.assets || {};
+    async function getImgByAssetId(assetId){
+      if(!assetId || !assets[assetId]) return null;
+      if(imageCache[assetId]) return imageCache[assetId];
+      const img = await new Promise(resolve=>{
+        const i = new Image();
+        i.onload = ()=>resolve(i);
+        i.onerror = ()=>resolve(null);
+        i.src = assets[assetId];
+      });
+      if(img) imageCache[assetId] = img;
+      return img;
+    }
+
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const item = images?.[r]?.[c];
+        if(!item) continue;
+        const dx = c * cellW, dy = r * cellH;
+        if(typeof item === 'string'){
+          const img = await getImgByAssetId(item);
+          if(img) o.drawImage(img, dx, dy, cellW, cellH);
+          continue;
+        }
+        if(item?.kind === 'cropRef' && item.assetId && item.crop){
+          const img = await getImgByAssetId(item.assetId);
+          if(img){
+            const cr = item.crop;
+            o.drawImage(img, cr.sx, cr.sy, cr.sw, cr.sh, dx, dy, cellW, cellH);
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  async function downloadMegaMergedImage(){
+    try{
+      if(!mega) loadMega();
+      updateMegaFromInputs();
+      ensureSlotCount();
+      const filledSlots = mega.slots.map((s,i)=>({slot:s, idx:i})).filter(x=>x.slot?.data);
+      if(!filledSlots.length) return toast?.('ยังไม่มีโปรเจกต์ย่อยใน Mega ให้รวมภาพ', 'warn');
+
+      const slotPx = Math.max(256, Math.min(1600, parseInt(m$('megaSplitMaxSide')?.value,10)||900));
+      const rawW = mega.cols * slotPx;
+      const rawH = mega.rows * slotPx;
+      const maxSide = 8192;
+      const scale = Math.min(1, maxSide / Math.max(rawW, rawH));
+      const outW = Math.max(1, Math.round(rawW * scale));
+      const outH = Math.max(1, Math.round(rawH * scale));
+      const perSlotW = outW / mega.cols;
+      const perSlotH = outH / mega.rows;
+
+      const out = document.createElement('canvas');
+      out.width = outW;
+      out.height = outH;
+      const o = out.getContext('2d', { alpha:false });
+      o.fillStyle = '#ffffff';
+      o.fillRect(0,0,outW,outH);
+
+      const imageCache = {};
+      for(const {slot, idx} of filledSlots){
+        const childCanvas = await renderChildProjectCanvas(slot.data, imageCache);
+        const mc = idx % mega.cols;
+        const mr = Math.floor(idx / mega.cols);
+        const dx = Math.round(mc * perSlotW);
+        const dy = Math.round(mr * perSlotH);
+        const dw = Math.max(1, Math.round(perSlotW));
+        const dh = Math.max(1, Math.round(perSlotH));
+        o.drawImage(childCanvas, 0, 0, childCanvas.width, childCanvas.height, dx, dy, dw, dh);
+      }
+
+      o.strokeStyle = 'rgba(0,0,0,.32)';
+      o.lineWidth = 1;
+      for(let c=1;c<mega.cols;c++){ const x = Math.round(c * perSlotW) + .5; o.beginPath(); o.moveTo(x,0); o.lineTo(x,outH); o.stroke(); }
+      for(let r=1;r<mega.rows;r++){ const y = Math.round(r * perSlotH) + .5; o.beginPath(); o.moveTo(0,y); o.lineTo(outW,y); o.stroke(); }
+
+      downloadCanvasPng(out, safeFileName(mega.name || 'mega_project') + '_merged.png');
+      m$('megaPreviewText').value = `Merged image created\nGrid: ${mega.cols}x${mega.rows}\nFilled slots: ${filledSlots.length}/${mega.slots.length}\nOutput: ${outW}x${outH}px${scale < 1 ? ' (auto-scaled for browser safety)' : ''}`;
+      toast?.('ดาวน์โหลดภาพรวม Mega แล้ว', 'success');
+    }catch(e){
+      console.error(e);
+      toast?.('รวมภาพ Mega ไม่สำเร็จ: ' + (e.message || e), 'error');
+    }
+  }
   function loadMegaSourceImage(file){
     return new Promise((resolve,reject)=>{
       if(!file) return reject(new Error('no file'));
@@ -5042,6 +5146,7 @@ window.addEventListener('DOMContentLoaded', () => {
     m$('megaExportPromptBtn')?.addEventListener('click',()=>exportMega('prompt'));
     m$('megaExportJsonBtn')?.addEventListener('click',()=>exportMega('json'));
     m$('megaExportLuaBtn')?.addEventListener('click',()=>exportMega('lua'));
+    m$('megaDownloadMergedImageBtn')?.addEventListener('click',downloadMegaMergedImage);
     m$('megaExportBackupBtn')?.addEventListener('click',exportMegaBackup);
     m$('megaImportBackupInput')?.addEventListener('change',e=>importMegaBackup(e.target.files?.[0]));
     m$('megaSplitImageBtn')?.addEventListener('click', splitImageToMegaProjects);
