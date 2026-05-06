@@ -706,6 +706,62 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
   }
 }
 
+
+/* ===== AI FIX 2026-05-06: iPad/Desktop usability + real minimap toggle + zoom-safe grid ===== */
+body.minimap-off .miniMap{display:none !important;}
+body.view-mode-active #selectToggleBtn{background:#252936 !important;border-color:#475569 !important;}
+body.view-mode-active #selectToggleBtn::after{content:'ดู';position:absolute;right:-5px;top:-6px;font-size:10px;background:#0f172a;border:1px solid #475569;border-radius:999px;padding:2px 4px;color:#e2e8f0;}
+#selectToggleBtn{position:relative;}
+
+@media (min-width:901px){
+  /* เดิมจอใหญ่ซ่อนปุ่มลอย ทำให้ iPad ไม่มีปุ่มมือและคอมใช้งานยาก */
+  .floatTools{
+    display:flex !important;
+    position:fixed;
+    right:18px;
+    top:86px;
+    z-index:50;
+  }
+  .floatTools button{
+    width:48px;
+    height:48px;
+    border-radius:16px;
+    font-size:18px;
+  }
+  .lodStatusPanel{right:82px !important;}
+  .miniMap{right:18px;bottom:18px;}
+}
+
+@media (min-width:701px) and (max-width:1180px){
+  /* Tablet / iPad layout: ให้เมนูไม่เบียดพื้นที่วาดและยังมีแถบปุ่มล่าง */
+  body.ux-pro-refactor .app, .app{
+    grid-template-rows:64px minmax(0,1fr) 68px !important;
+    grid-template-columns:1fr !important;
+  }
+  .topbar{grid-column:1 !important;}
+  .workspace{grid-column:1 !important;grid-row:2 !important;padding:12px;}
+  .bottomBar{display:grid !important;grid-row:3 !important;}
+  .sheetBackdrop{display:none;}
+  .sheetBackdrop.show{display:block !important;}
+  .sheet{
+    position:fixed !important;
+    left:0;right:0;bottom:0;
+    height:min(70dvh,720px) !important;
+    z-index:40;
+    transform:translateY(105%);
+    border-radius:22px 22px 0 0 !important;
+  }
+  .sheet.open{transform:translateY(0) !important;}
+  .sheetHead{display:block !important;}
+  .floatTools{display:flex !important;right:14px;top:82px;}
+  .miniMap{width:132px;height:132px;right:14px;bottom:82px;}
+  .lodStatusPanel{top:82px !important;right:76px !important;width:205px;}
+}
+
+@media (min-width:1181px){
+  .topbarActions{display:flex;gap:8px;align-items:center;}
+}
+
 </style>
 </head>
 <body>
@@ -2084,8 +2140,26 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
       }
     }
 
+    function setMiniMapEnabled(value, notify = false){
+      miniMapEnabled = !!value;
+      document.body.classList.toggle('minimap-off', !miniMapEnabled);
+      if(miniMap){
+        miniMap.classList.toggle('show', miniMapEnabled);
+        miniMap.style.display = miniMapEnabled ? '' : 'none';
+      }
+      if(els.toggleMiniMapBtn){
+        els.toggleMiniMapBtn.textContent = miniMapEnabled ? 'ปิดแผนที่ย่อ' : 'เปิดแผนที่ย่อ';
+      }
+      if(notify) toast(miniMapEnabled ? 'เปิดแผนที่ย่อแล้ว' : 'ปิดแผนที่ย่อแล้ว', 'info');
+      if(miniMapEnabled) updateMiniMap();
+    }
+
     function updateMiniMap(){
-      if(!miniMap || !miniCtx || !miniMapEnabled || !canvas.width || !canvas.height || !state?.cells?.length) return;
+      if(!miniMap || !miniCtx || !miniMapEnabled || !canvas.width || !canvas.height || !state?.cells?.length){
+        if(!miniMapEnabled && miniMap) miniMap.classList.remove('show');
+        return;
+      }
+      miniMap.style.display = '';
       miniMap.classList.add('show');
 
       const mw = miniMapCanvas.width;
@@ -2169,31 +2243,59 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
     function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
     function drawGridOverlay(bounds = null){
-      const mode=els.gridGlobalMode.value; if(mode==='none') return;
+      const mode = els.gridGlobalMode.value;
+      if(mode === 'none') return;
       const b = bounds || { c0:0, r0:0, c1:state.cols-1, r1:state.rows-1 };
-      const xStart = b.c0 * state.cellW;
-      const yStart = b.r0 * state.cellH;
+      const xStart = Math.max(0, b.c0 * state.cellW);
+      const yStart = Math.max(0, b.r0 * state.cellH);
       const xEnd = Math.min(canvas.width, (b.c1 + 1) * state.cellW);
       const yEnd = Math.min(canvas.height, (b.r1 + 1) * state.cellH);
-      ctx.save(); ctx.lineWidth=1;
+      const isViewportDraw = !!bounds;
+      // ตอนซูมออกมาก ๆ เส้น 1px ใน canvas จะถูก CSS transform ย่อจนหาย
+      // เลยเพิ่มความหนาในหน่วย world ให้เท่ากับอย่างน้อย ~1.25px บนจอจริง
+      const screenSafeLine = isViewportDraw ? Math.max(1, 1.25 / Math.max(viewScale, 0.05)) : 1;
+      const screenSafeMajor = isViewportDraw ? Math.max(2, 1.75 / Math.max(viewScale, 0.05)) : 2;
+      const drawLine = (x1,y1,x2,y2) => {
+        ctx.beginPath();
+        ctx.moveTo(Math.round(x1) + 0.5, Math.round(y1) + 0.5);
+        ctx.lineTo(Math.round(x2) + 0.5, Math.round(y2) + 0.5);
+        ctx.stroke();
+      };
+
+      ctx.save();
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'miter';
       for(const g of state.minorGrids){
-        if(!(mode==='all'||g.enabled)) continue;
-        const spacing=pxFromUnit(g.spacing,g.unit); const subdiv=clampInt(g.subdiv,1,50);
-        ctx.strokeStyle=g.color; ctx.globalAlpha=.5;
-        const firstX = Math.max(spacing, Math.floor(xStart / spacing) * spacing);
-        const firstY = Math.max(spacing, Math.floor(yStart / spacing) * spacing);
-        for(let x=firstX;x<xEnd;x+=spacing) line(x,yStart,x,yEnd);
-        for(let y=firstY;y<yEnd;y+=spacing) line(xStart,y,xEnd,y);
-        ctx.globalAlpha=.8;
-        for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++) for(let i=1;i<subdiv;i++){
-          const x=c*state.cellW+(state.cellW/subdiv)*i, y=r*state.cellH+(state.cellH/subdiv)*i;
-          line(x,r*state.cellH,x,(r+1)*state.cellH); line(c*state.cellW,y,(c+1)*state.cellW,y);
+        if(!(mode === 'all' || g.enabled)) continue;
+        const spacing = Math.max(1, pxFromUnit(g.spacing, g.unit));
+        const subdiv = clampInt(g.subdiv, 1, 50);
+        ctx.strokeStyle = g.color;
+        ctx.globalAlpha = .55;
+        ctx.lineWidth = screenSafeLine;
+        const firstX = Math.ceil(xStart / spacing) * spacing;
+        const firstY = Math.ceil(yStart / spacing) * spacing;
+        for(let x = firstX; x <= xEnd; x += spacing) drawLine(x, yStart, x, yEnd);
+        for(let y = firstY; y <= yEnd; y += spacing) drawLine(xStart, y, xEnd, y);
+
+        ctx.globalAlpha = .85;
+        ctx.lineWidth = screenSafeLine;
+        for(let r = b.r0; r <= b.r1; r++){
+          for(let c = b.c0; c <= b.c1; c++){
+            for(let i = 1; i < subdiv; i++){
+              const x = c * state.cellW + (state.cellW / subdiv) * i;
+              const y = r * state.cellH + (state.cellH / subdiv) * i;
+              drawLine(x, r * state.cellH, x, (r + 1) * state.cellH);
+              drawLine(c * state.cellW, y, (c + 1) * state.cellW, y);
+            }
+          }
         }
       }
-      if(mode==='all'||els.showMajorGrid.value==='yes'){
-        ctx.globalAlpha=1; ctx.lineWidth=2; ctx.strokeStyle=els.majorColor.value;
-        for(let c=b.c0;c<=b.c1+1;c++) line(c*state.cellW,yStart,c*state.cellW,yEnd);
-        for(let r=b.r0;r<=b.r1+1;r++) line(xStart,r*state.cellH,xEnd,r*state.cellH);
+      if(mode === 'all' || els.showMajorGrid.value === 'yes'){
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = screenSafeMajor;
+        ctx.strokeStyle = els.majorColor.value;
+        for(let c = b.c0; c <= b.c1 + 1; c++) drawLine(c * state.cellW, yStart, c * state.cellW, yEnd);
+        for(let r = b.r0; r <= b.r1 + 1; r++) drawLine(xStart, r * state.cellH, xEnd, r * state.cellH);
       }
       ctx.restore();
     }
@@ -3070,10 +3172,7 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
       render(); toast('เลือกทั้งหมดแล้ว', 'success');
     });
     els.toggleMiniMapBtn?.addEventListener('click',()=>{
-      miniMapEnabled = !miniMapEnabled;
-      if(miniMap) miniMap.classList.toggle('show', miniMapEnabled);
-      updateMiniMap();
-      toast(miniMapEnabled ? 'เปิด Minimap แล้ว' : 'ปิด Minimap แล้ว', 'info');
+      setMiniMapEnabled(!miniMapEnabled, true);
     });
     els.downloadAllBtn.addEventListener('click',downloadAll);
     els.downloadSelectedBtn.addEventListener('click',downloadSelected);
@@ -3138,7 +3237,7 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
       else if(e.key === 'Delete' || e.key === 'Backspace'){ if(state.selected.size){ e.preventDefault(); deleteSelected(); } }
       else if(e.key === '+' || e.key === '='){ setZoom(Number(els.zoom.value)+10); }
       else if(e.key === '-' || e.key === '_'){ setZoom(Number(els.zoom.value)-10); }
-      else if(e.key.toLowerCase() === 'm'){ miniMapEnabled = !miniMapEnabled; miniMap?.classList.toggle('show', miniMapEnabled); updateMiniMap(); }
+      else if(e.key.toLowerCase() === 'm'){ setMiniMapEnabled(!miniMapEnabled, true); }
       else if(e.key === 'Escape'){ closeSheet(); }
     });
 
@@ -3514,7 +3613,7 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
     onAuthChanged(null);
     renderRoomShortcuts();
     updateHistoryButtons();
-    updateMiniMap();
+    setMiniMapEnabled(miniMapEnabled, false);
 
     window.addEventListener('load', async () => {
       const hash = new URLSearchParams(location.hash.replace('#',''));
