@@ -5258,7 +5258,7 @@ body:not(.reasoned-pro) .uploadHelpBox{color:#cbd5e1;background:rgba(37,99,235,.
     document.querySelectorAll('[data-tab="mega"],[data-open-tab="mega"]').forEach(e=>e.textContent='🌍 Mega');
     document.querySelectorAll('[data-tab="share"],[data-open-tab="share"]').forEach(e=>e.textContent='🔗 โปรเจกต์');
 
-    // 4) Color picker UX: wrap input with clear text; disable color until Custom is selected to avoid accidental interpretation.
+    // 4) Color picker UX: keep color picker always usable.
     const color=$('emptyCellColor');
     const preset=$('emptyCellPreset');
     if(color && !color.closest('.colorPickerRow')){
@@ -5273,12 +5273,17 @@ body:not(.reasoned-pro) .uploadHelpBox{color:#cbd5e1;background:rgba(37,99,235,.
     }
     function syncColorPicker(){
       if(!color || !preset) return;
-      const custom = preset.value === 'custom';
-      color.disabled = !custom;
-      color.style.opacity = custom ? '1' : '.45';
-      color.title = custom ? 'เลือกสีช่องว่างแบบกำหนดเอง' : 'เลือก “กำหนดเอง” ก่อนจึงจะใช้สีนี้';
+      color.disabled = false;
+      color.style.opacity = '1';
+      color.title = 'เลือกสีช่องว่างแบบกำหนดเอง';
     }
     preset?.addEventListener('change', syncColorPicker);
+    color?.addEventListener('input', ()=>{
+      if(preset && preset.value !== 'custom'){
+        preset.value = 'custom';
+        preset.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+    });
     syncColorPicker();
 
     // 5) Make image upload path obvious.
