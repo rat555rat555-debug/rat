@@ -635,6 +635,77 @@ body.reasoned-pro button.good{background:linear-gradient(135deg,#16a34a,#22c55e)
 body.reasoned-pro button{letter-spacing:.05px;}
 body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
 
+
+/* ===== AI PATCH: cross-platform stabilization ===== */
+@media (min-width:1200px){
+  #homeScreen.homeScreen{
+    place-items:center;
+    padding:32px;
+  }
+  #homeScreen .homeCard{
+    width:min(560px,92vw);
+    padding:24px;
+  }
+}
+
+@media (min-width:701px) and (max-width:900px){
+  .bottomBar{
+    overflow-x:auto;
+    display:flex;
+    scrollbar-width:none;
+    padding-inline:12px;
+  }
+  .bottomBar::-webkit-scrollbar{display:none;}
+  .bottomBar button{
+    flex:0 0 120px;
+  }
+}
+
+@media (max-width:700px){
+  .homeCard{
+    border-radius:20px;
+  }
+  .homeCard h1{
+    font-size:21px;
+    line-height:1.2;
+  }
+  .homeCard p,
+  .proReason,
+  .status,
+  .hint{
+    font-size:12px !important;
+    line-height:1.5;
+  }
+  .row{
+    grid-template-columns:1fr !important;
+  }
+  input::placeholder{
+    font-size:11px;
+  }
+  .bottomBar button{
+    min-height:46px;
+  }
+}
+
+@media (orientation:landscape) and (max-height:520px){
+  .bottomBar{
+    display:none !important;
+  }
+  body.ux-pro-refactor .app{
+    grid-template-rows:52px minmax(0,1fr);
+  }
+  .sheet{
+    height:min(88dvh, calc(100dvh - 56px));
+  }
+}
+
+/* Prevent accidental drag overlay on touch devices */
+@media (pointer:coarse){
+  .canvasStage.dragOver:after{
+    display:none !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -3483,5 +3554,44 @@ body.reasoned-pro button:disabled{opacity:.45;cursor:not-allowed;}
       }
     });
 
-  </script></body>
+  </script>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const loginBtn = [...document.querySelectorAll('button')].find(b => 
+    b.textContent.includes('เข้าสู่ระบบ')
+  );
+  const registerBtn = [...document.querySelectorAll('button')].find(b => 
+    b.textContent.includes('สร้างบัญชี')
+  );
+
+  function showFallbackToast(message){
+    try{
+      if(typeof toast === 'function'){
+        toast(message, 'warn');
+      }else{
+        alert(message);
+      }
+    }catch(e){
+      alert(message);
+    }
+  }
+
+  [loginBtn, registerBtn].forEach(btn => {
+    if(!btn) return;
+    btn.addEventListener('click', () => {
+      const firebaseMissing =
+        typeof firebase === 'undefined' &&
+        typeof initializeApp === 'undefined';
+
+      if(firebaseMissing){
+        showFallbackToast(
+          'ยังไม่ได้ตั้งค่า Firebase Authentication จึงยังไม่สามารถเข้าสู่ระบบออนไลน์ได้'
+        );
+      }
+    }, true);
+  });
+});
+</script>
+
+</body>
 </html>
